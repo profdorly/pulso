@@ -1,0 +1,50 @@
+# Confere, à mão, se as chaves guardadas no ambiente `production` funcionam — depois de criar ou
+# trocar uma chave, antes de depender dela numa edição. Faz uma chamada mínima a cada serviço com
+# o mesmo modelo e o mesmo endpoint que a cozinha usa, e mostra só o código de resposta e, em caso
+# de erro, o código do erro. Nunca a chave nem a mensagem de erro, que às vezes cita o fim dela.
+# Custa uma fração de centavo.
+
+name: Testar chaves
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  testar:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment:
+      name: production
+      # Só lê segredos; não é um deploy.
+      deployment: false
+    steps:
+      - name: Chamar cada serviço
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ARTIFICIAL_ANALYSIS_API_KEY: ${{ secrets.ARTIFICIAL_ANALYSIS_API_KEY }}
+        run: |
+          set -u
+          falhas=0
+          call() { # rótulo, url, corpo JSON (vazio = GET), cabeçalho de autenticação
+            if [ -n "$3" ]; then
+              code=$(curl -s -m 60 -o /tmp/r.json -w "%{http_code}" "$2" -H "$4" -H "Content-Type: application/json" -d "$3")
+            else
+              code=$(curl -s -m 60 -o /tmp/r.json -w "%{http_code}" "$2" -H "$4")
+            fi
+            erro=$(jq -r '.error.code // .error.type // empty' /tmp/r.json 2>/dev/null || true)
+            rm -f /tmp/r.json
+            if [ "$code" = "200" ]; then echo "ok    $1"; else echo "FALHA $1: HTTP $code ${erro}"; falhas=$((falhas + 1)); fi
+          }
+          # Os mesmos modelos de backend/src/edition/models.ts e auditorModels.ts.
+          call "OpenAI Responses (gpt-6-luna: worker, resumos, busca)" https://api.openai.com/v1/responses \
+            '{"model":"gpt-6-luna","input":"Responda ok.","max_output_tokens":32}' "Authorization: Bearer ${OPENAI_API_KEY}"
+          call "OpenAI Responses (gpt-6.1-sol: capa e humanizador)" https://api.openai.com/v1/responses \
+            '{"model":"gpt-6.1-sol","input":"Responda ok.","max_output_tokens":32}' "Authorization: Bearer ${OPENAI_API_KEY}"
+          call "OpenAI Chat completions (gpt-6.1-sol: auditor)" https://api.openai.com/v1/chat/completions \
+            '{"model":"gpt-6.1-sol","messages":[{"role":"user","content":"Responda ok."}],"max_completion_tokens":32}' "Authorization: Bearer ${OPENAI_API_KEY}"
+          call "Artificial Analysis (catálogo de modelos)" https://artificialanalysis.ai/api/v2/language/models/free \
+            "" "x-api-key: ${ARTIFICIAL_ANALYSIS_API_KEY}"
+          [ "$falhas" -eq 0 ] && echo "todas as chaves funcionam" || exit 1
