@@ -72,7 +72,13 @@ export function stateTargetFromEnv(env: NodeJS.ProcessEnv = process.env): StateT
     client: new S3Client({
       endpoint,
       region: "auto",
-      credentials: { accessKeyId, secretAccessKey },
+      credentials: {
+        accessKeyId,
+        secretAccessKey,
+        // Short-lived credentials (`cf r2 temporary-credentials create`) come with a session token:
+        // what an operator uses for a one-off import, so no long-lived key sits on a laptop.
+        ...(env.R2_SESSION_TOKEN ? { sessionToken: env.R2_SESSION_TOKEN } : {}),
+      },
       // A local stand-in (MinIO, a test server) has no per-bucket hostnames.
       forcePathStyle: Boolean(env.KITCHEN_S3_ENDPOINT),
       requestChecksumCalculation: "WHEN_REQUIRED",
