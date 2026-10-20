@@ -16,3 +16,20 @@ updates:
     groups:
       minor-and-patch:
         update-types: [minor, patch]
+    # Held back on purpose. `update-types` only affects version updates: a security fix for any of
+    # these still arrives as its own pull request.
+    ignore:
+      # React 19.3 adds ~8 kB gzip to the weekly player's bundle and breaks budgets.json
+      # (measured 20/out/2026: 110.8 kB against 105.8). Revisit with the bundle, not blindly.
+      - dependency-name: "react"
+        update-types: ["version-update:semver-minor"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-minor"]
+      - dependency-name: "@types/react"
+        update-types: ["version-update:semver-minor"]
+      - dependency-name: "@types/react-dom"
+        update-types: ["version-update:semver-minor"]
+      # TypeScript 7 is the rewritten compiler: it drops `baseUrl` (used by the frontend tsconfig)
+      # and typescript-eslint does not support it yet. A migration of its own, not a bump.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
