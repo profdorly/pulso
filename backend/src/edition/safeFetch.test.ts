@@ -130,7 +130,7 @@ describe("guardedFetch", () => {
   it("validates every redirect hop, not just the first", async () => {
     const fetchImpl = vi.fn((input: string | URL) => {
       const url = String(input);
-      if (url.startsWith("https://news.example.com")) {
+      if (new URL(url).hostname === "news.example.com") {
         return Promise.resolve(
           response(302, { location: "http://169.254.169.254/latest/meta-data/" }, url)
         );

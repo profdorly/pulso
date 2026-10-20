@@ -404,9 +404,10 @@ export const EVIDENCE_LIMIT = 40_000;
  */
 export function extractEvidenceText(html: string): string {
   const withoutCode = html
-    .replace(/<script[\s\S]*?<\/script>/gi, " ")
-    .replace(/<style[\s\S]*?<\/style>/gi, " ")
-    .replace(/<noscript[\s\S]*?<\/noscript>/gi, " ");
+    // End tags may carry whitespace before the ">" (`</script >`), and HTML is case-insensitive.
+    .replace(/<script\b[\s\S]*?<\/script\s*>/gi, " ")
+    .replace(/<style\b[\s\S]*?<\/style\s*>/gi, " ")
+    .replace(/<noscript\b[\s\S]*?<\/noscript\s*>/gi, " ");
   const text = stripHtml(withoutCode) ?? "";
   return text.length > EVIDENCE_LIMIT ? text.slice(0, EVIDENCE_LIMIT) : text;
 }

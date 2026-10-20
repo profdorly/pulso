@@ -85,12 +85,9 @@ function countMatches(text, pattern) {
 
 /** Newest entry date a feed advertises, so a stale feed is visible as stale. */
 function newestDate(xml) {
-  const stamps = [
-    ...(xml.match(/<pubDate>([^<]+)<\/pubDate>/gi) ?? []),
-    ...(xml.match(/<updated>([^<]+)<\/updated>/gi) ?? []),
-    ...(xml.match(/<published>([^<]+)<\/published>/gi) ?? []),
-  ]
-    .map((raw) => Date.parse(raw.replace(/<[^>]+>/g, "").trim()))
+  // The date is the captured text between the tags; nothing is stripped out of markup.
+  const stamps = [...xml.matchAll(/<(pubDate|updated|published)>([^<]+)<\/\1>/gi)]
+    .map((match) => Date.parse(match[2].trim()))
     .filter((value) => Number.isFinite(value));
   if (stamps.length === 0) return null;
   return new Date(Math.max(...stamps)).toISOString().slice(0, 10);

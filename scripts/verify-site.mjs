@@ -106,7 +106,7 @@ function checkPaintedOg(name, fetched) {
 }
 
 const canonicalOf = (html) => (/<link rel="canonical" href="([^"]+)"/.exec(html) ?? [])[1] ?? "";
-const scriptsOf = (html) => [...html.matchAll(/<script\b([^>]*)>/g)].map((match) => match[1]);
+const scriptsOf = (html) => [...html.matchAll(/<script\b([^>]*)>/gi)].map((match) => match[1]);
 const localHrefs = (html) =>
   [...html.matchAll(/<a\b[^>]*\bhref="(\/[^"#]*)/g)].map((match) => match[1]).filter((href) => !href.startsWith("//"));
 
