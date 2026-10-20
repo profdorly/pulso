@@ -1,0 +1,18 @@
+Pulso
+Copyright 2026 Professor Dorly
+
+This product includes software developed by Professor Dorly, licensed under the
+Apache License, Version 2.0 (see LICENSE).
+
+The Apache License does not cover the "Pulso" and "Professor Dorly" names, logos and
+brand assets; see TRADEMARKS.md.
+
+Bundled third-party material:
+
+- Playfair Display, Copyright 2017 The Playfair Display Project Authors, and IBM Plex,
+  Copyright 2017 IBM Corp., under the SIL Open Font License 1.1
+  (frontend/public/fonts/OFL.txt, scripts/fonts/OFL.txt).
+
+- Model benchmark data shown on /modelos comes from the Artificial Analysis API
+  (https://artificialanalysis.ai/) under its own terms, which require attribution.
+  The data is not part of this repository's license.

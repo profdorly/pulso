@@ -1,0 +1,12 @@
+---
+description: Revise Pulso PT-BR copy with the Humanizador before it is published.
+globs: frontend/src/**/*.{ts,tsx}, backend/src/edition/**/*.ts
+alwaysApply: false
+---
+
+Todo texto em português que for para o Pulso passa pelo Humanizador **antes** de ir ao site.
+
+1. Siga `.cursor/skills/humanizador/SKILL.md` (32 tells de PT-BR).
+2. Registro: jornal editorial, citado, opinião cabível — não release de assessoria.
+3. Preserve fatos, URLs e nomes de veículos. Não invente.
+4. O publisher já revisa headline, lede, bullets e blurbs em runtime (`backend/src/edition/humanize.ts`). Se mudar a skill, atualize `humanizePrompt.ts`.

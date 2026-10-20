@@ -1,0 +1,8 @@
+{
+  "criticalBundleGzipBytes": {
+    "budget": 108288,
+    "measured": 101618,
+    "measuredAt": "2026-08-31T20:18:36.222Z",
+    "note": "Entry chunk plus its static import graph, gzip level 9. Dynamic imports (charts, search) are excluded on purpose. Raise this only with a reason — the cover is a scanning surface. Raised by 256 B on 2026-10-07 for the weekly audio entry points (one lazy route plus the cover card's Suspense boundary); the player and transcript ship in their own chunk. Raised by 512 B on 2026-10-08 for the edition's table of contents: the daily edition carries up to 50 items, the edition page is part of the critical bundle, and a lazily loaded contents card would shift the sticky sidebar after first paint."
+  }
+}

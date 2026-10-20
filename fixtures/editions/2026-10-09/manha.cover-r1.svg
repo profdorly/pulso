@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-label="Laboratório lança modelo menor e agências testam regras de uso">
+  <defs>
+    <linearGradient id="brasa" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f0b35a"/>
+      <stop offset="45%" stop-color="#ec8f6e"/>
+      <stop offset="75%" stop-color="#d97f8c"/>
+      <stop offset="100%" stop-color="#b07a9e"/>
+    </linearGradient>
+    <filter id="grainFilter" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" stitchTiles="stitch"/>
+    </filter>
+    <clipPath id="lightClip"><rect x="930" y="64" width="206" height="547" rx="32"/></clipPath>
+  </defs>
+  <rect width="100%" height="100%" fill="#110d0b"/>
+  <rect width="100%" height="3" fill="url(#brasa)"/>
+  <rect x="930" y="64" width="206" height="547" rx="32" fill="url(#brasa)"/>
+  <g clip-path="url(#lightClip)" fill="none" stroke="#17120f" stroke-opacity="0.28">
+    <circle cx="930" cy="100" r="130"/>
+    <circle cx="1148" cy="565" r="90"/>
+  </g>
+  <rect width="100%" height="100%" filter="url(#grainFilter)" opacity="0.045"/>
+  <text x="96" y="104" fill="#a69c94" font-family="'IBM Plex Mono', ui-monospace, monospace" font-size="14" font-weight="500" letter-spacing="3.4">PULSO · 09 OUT 2026</text>
+  <text x="96" y="186" fill="#f4ede6" font-family="'Playfair Display', Georgia, serif" font-weight="500" font-size="68" letter-spacing="-1.8">Laboratório lança</text><text x="96" y="262" fill="#f4ede6" font-family="'Playfair Display', Georgia, serif" font-weight="500" font-size="68" letter-spacing="-1.8">modelo menor e</text><text x="96" y="338" fill="#f4ede6" font-family="'Playfair Display', Georgia, serif" font-weight="500" font-size="68" letter-spacing="-1.8">agências testam regras</text><text x="96" y="414" fill="#f4ede6" font-family="'Playfair Display', Georgia, serif" font-weight="500" font-size="68" letter-spacing="-1.8">de uso</text>
+  <text x="96" y="604" fill="#f4ede6" font-family="'IBM Plex Mono', ui-monospace, monospace" font-size="13" font-weight="500" letter-spacing="3.2">PULSO</text>
+  <circle cx="168" cy="600" r="2" fill="#ec8f6e"/>
+  <text x="184" y="604" fill="#a69c94" font-family="'IBM Plex Mono', ui-monospace, monospace" font-size="13" font-weight="500" letter-spacing="3.2">DORLY.COM.BR</text>
+</svg>

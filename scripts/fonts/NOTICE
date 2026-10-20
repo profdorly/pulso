@@ -1,0 +1,11 @@
+Bundled so cover rasterization does not depend on fonts installed on the host.
+
+PlayfairDisplay-Bold.ttf
+  Playfair Display, Copyright 2012 The Playfair Display Project Authors
+  SIL Open Font License 1.1 — https://github.com/clauseggers/Playfair-Display
+
+IBMPlexMono-Medium.ttf
+  IBM Plex Mono, Copyright © 2017 IBM Corp.
+  SIL Open Font License 1.1 — https://github.com/IBM/plex
+
+Full license text, with the reserved font names: OFL.txt in this directory.

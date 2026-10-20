@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#FBF7F2" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#110D0B" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="mask-icon" href="/favicon.svg" color="#17120F" />
+    <title>Pulso — Professor Dorly</title>
+    <!--
+      Placeholder head. `scripts/prerender.mjs` replaces the title and this robots tag with
+      per-route metadata, canonical URL, Open Graph and JSON-LD.
+
+      The noindex below is a fail-safe, not a temporary measure: it only survives in a build
+      that was served without the prerender step, and such a build has no per-page metadata
+      and so should not be indexed.
+    -->
+    <meta name="robots" content="noindex, nofollow" />
+
+    <link rel="preload" as="font" type="font/woff2" href="/fonts/playfair-display-500-latin.woff2" crossorigin />
+    <link rel="preload" as="font" type="font/woff2" href="/fonts/ibm-plex-sans-400-latin.woff2" crossorigin />
+    <link rel="preload" as="font" type="font/woff2" href="/fonts/ibm-plex-mono-400-latin.woff2" crossorigin />
+
+    <!-- Google Analytics 4, deferred so it never blocks the critical head. Same property as dorly.com.br. -->
+    <script defer src="https://www.googletagmanager.com/gtag/js?id=G-60D496205Q"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-60D496205Q');
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

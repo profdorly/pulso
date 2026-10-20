@@ -1,0 +1,56 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Env / secrets
+.env
+.env.*
+*.env
+!.env.example
+*.pem
+*.key
+*.p12
+
+# Build output
+dist/
+dist-site/
+dist-ssr/
+build/
+*.tsbuildinfo
+
+# Database
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+data/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Test / coverage
+coverage/
+
+# Editor settings are per-machine, not project state.
+.kiro/settings/
+
+# One-off social exports (4.3 MB of PNG); not referenced by any code.
+pulso-*-linkedin.*
+
+# Local pilots and scratch output (audio pilot writes MP3s and scripts here).
+.tmp/
+
+# The kitchen's working copies (npm run kitchen / kitchen:import) and local Cloudflare tooling.
+.kitchen/
+.kitchen-import/
+.wrangler/
+.dev.vars
+*.db-shm
+*.db-wal

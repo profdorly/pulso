@@ -1,0 +1,112 @@
+{
+  "id": "2026-10-10-manha",
+  "schemaVersion": 1,
+  "slot": "manha",
+  "calendarDate": "2026-10-10",
+  "timezone": "America/Sao_Paulo",
+  "capturedAt": "2026-10-10T10:34:00.000Z",
+  "status": "ok",
+  "kind": "regular",
+  "number": 92,
+  "predecessorId": "2026-10-09-manha",
+  "revision": 1,
+  "supersedesCapturedAt": null,
+  "digest": {
+    "headline": "Chips para IA dominam o dia, com nova fábrica na Ásia",
+    "lede": "Uma fabricante anuncia expansão de capacidade, e uma coluna questiona o ritmo dos investimentos.",
+    "bullets": [
+      {
+        "text": "Fabricante anuncia fábrica para aceleradores de IA",
+        "url": "https://tech.example.net/nova-fabrica",
+        "outlet": "Revista Exemplo"
+      }
+    ]
+  },
+  "items": [
+    {
+      "id": "a80b57fbf9bd3ec6ab949ef24ab5cf25c197a6561efbdba692d1ce8347cbdd05",
+      "title": "Chipmaker announces new plant dedicated to AI accelerators",
+      "titlePt": "Fabricante anuncia nova fábrica dedicada a aceleradores de IA",
+      "blurbPt": "A fábrica deve começar a operar em 2028.",
+      "summaryPt": "A reportagem descreve a nova fábrica e o cronograma de operação informado pela empresa.",
+      "url": "https://tech.example.net/nova-fabrica",
+      "outlet": "Revista Exemplo",
+      "region": "asia",
+      "kind": "press",
+      "genre": "news",
+      "publishedAt": "2026-10-10T07:40:00.000Z",
+      "publishedAtKind": "source",
+      "firstSeenAt": "2026-10-10T10:30:00.000Z"
+    },
+    {
+      "id": "bd92454f23f2a305f5f00bb968dbfb7990e15365e2f4addc5b456cf629beaa6d",
+      "title": "Opinião: o ritmo dos investimentos em IA é sustentável?",
+      "blurbPt": "Coluna discute o custo dos centros de dados.",
+      "url": "https://opiniao.example.org/coluna-investimentos",
+      "outlet": "Diário Exemplo",
+      "region": "europe",
+      "kind": "press",
+      "genre": "opinion",
+      "publishedAt": "2026-10-10T06:30:00.000Z",
+      "publishedAtKind": "source",
+      "firstSeenAt": "2026-10-10T10:30:00.000Z"
+    },
+    {
+      "id": "dd76bdc42b0c1e76e5bb669eaf0847c91ccf7059763f229a6635319ebccba985",
+      "title": "A new assistant for office documents",
+      "titlePt": "Novo assistente para documentos de escritório",
+      "blurbPt": "O assistente resume e compara documentos longos.",
+      "url": "https://lab.example.com/assistente-escritorio",
+      "outlet": "Laboratório Exemplo",
+      "region": "us",
+      "kind": "lab",
+      "genre": "news",
+      "publishedAt": "2026-10-10T09:15:00.000Z",
+      "publishedAtKind": "source",
+      "firstSeenAt": "2026-10-10T10:30:00.000Z"
+    }
+  ],
+  "sourceFailures": [],
+  "benchmarks": {
+    "capturedAt": "2026-10-05T11:00:00.000Z",
+    "previousCapturedAt": null,
+    "headline": [
+      {
+        "label": "Modelo Exemplo Alfa",
+        "value": "61.2",
+        "delta": null,
+        "metric": "Índice de inteligência"
+      },
+      {
+        "label": "Modelo Exemplo Beta",
+        "value": "58.9",
+        "delta": null,
+        "metric": "Índice de inteligência"
+      }
+    ],
+    "attribution": [
+      "Artificial Analysis"
+    ],
+    "rows": []
+  },
+  "models": {
+    "discovery": "gpt-5.6-terra",
+    "editorial": "gpt-6.1-sol",
+    "worker": "gpt-6-luna"
+  },
+  "costUsdApprox": 0.12,
+  "costBreakdown": [],
+  "gate": {
+    "checked": 0,
+    "bulletsDropped": 0,
+    "blurbsDropped": 0,
+    "headlineFellBack": false,
+    "unsupportedSamples": []
+  },
+  "cover": {
+    "path": "/editions/2026-10-10/manha.cover-r1.svg",
+    "alt": "PULSO · 10 OUT 2026: Chips para IA dominam o dia, com nova fábrica na Ásia",
+    "width": 1200,
+    "height": 675
+  }
+}

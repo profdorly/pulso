@@ -1,0 +1,233 @@
+# Publica o Pulso: a cozinha gera a edição do dia (e, às segundas, antes dela, o catálogo de
+# modelos), o site é montado a partir dela e vai para o GitHub Pages; por fim, confere-se que o
+# site no ar mostra a edição.
+#
+#   cozinha → site → deploy → conferência
+#
+# A cozinha é um arquivo SQLite num bucket R2 (backend/src/kitchen). Ela é baixada, roda e
+# devolvida com escrita condicional: uma execução que perde a corrida falha em vez de apagar a
+# outra, e uma que falha não muda nada.
+#
+# Duas corridas por dia. A das 07:30 faz o trabalho; a das 09:40 só refaz o que a primeira não
+# terminou — a edição, se não saiu; o site, se não mostra a edição — e de resto não faz nada.
+# O GitHub atrasa e às vezes descarta execuções agendadas em horário de pico; a segunda cobre isso.
+#
+# Ambiente `production` (Settings → Environments), restrito ao branch main:
+#   segredos  OPENAI_API_KEY, ARTIFICIAL_ANALYSIS_API_KEY, R2_ACCOUNT_ID,
+#             R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY            (token de leitura e escrita)
+#             R2_READ_ACCESS_KEY_ID, R2_READ_SECRET_ACCESS_KEY  (token só de leitura, para o site)
+#             HEALTHCHECKS_URL, HEALTHCHECKS_MODELOS_URL        (opcionais)
+#   variáveis PULSO_WEB_SEARCH (shadow | vazio), PULSO_MAX_EDITION_USD (opcionais)
+#
+# Nada aqui roda até a variável do repositório PULSO_PUBLICAR valer "true" (Settings → Secrets and
+# variables → Actions → Variables). Um fork, ou este repositório antes da migração, fica inerte.
+
+name: Publicar
+
+on:
+  schedule:
+    - cron: "30 10 * * *" # 07:30 em Brasília
+    - cron: "40 12 * * *" # 09:40, repescagem
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      tarefa:
+        description: "O que rodar"
+        type: choice
+        options: [site, edicao, modelos]
+        default: site
+      forcar:
+        description: "Refazer a edição de hoje mesmo que já exista"
+        type: boolean
+        default: false
+      iniciar:
+        description: "Começar uma cozinha vazia (só na primeira corrida de um fork)"
+        type: boolean
+        default: false
+
+permissions: {}
+
+# Uma publicação por vez, em fila. `queue: max` mantém todas as que chegam esperando a vez; sem
+# ele, o GitHub guarda só uma pendente e cancela a anterior quando chega outra.
+concurrency:
+  group: publicar
+  queue: max
+
+jobs:
+  cozinha:
+    if: >-
+      vars.PULSO_PUBLICAR == 'true' && github.ref == 'refs/heads/main' &&
+      (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.tarefa != 'site'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    permissions:
+      contents: read
+    outputs:
+      publish: ${{ steps.kitchen.outputs.publish == 'true' || steps.live.outputs.stale == 'true' }}
+      edition: ${{ steps.kitchen.outputs.edition }}
+      catalogue: ${{ steps.kitchen.outputs.catalogue }}
+    env:
+      HEALTHCHECKS_URL: ${{ secrets.HEALTHCHECKS_URL }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+      # No dependency runs code at install time: scripts are skipped, then only the two packages
+      # that must build a native binary are rebuilt (the list approved in package.json allowScripts).
+      - run: npm ci --ignore-scripts
+      - run: npm rebuild better-sqlite3 esbuild
+
+      - name: Avisar o monitor que começou
+        if: env.HEALTHCHECKS_URL != ''
+        run: curl -fsS -m 10 --retry 3 -o /dev/null "$HEALTHCHECKS_URL/start" || true
+
+      - name: Rodar a cozinha
+        id: kitchen
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ARTIFICIAL_ANALYSIS_API_KEY: ${{ secrets.ARTIFICIAL_ANALYSIS_API_KEY }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          PULSO_WEB_SEARCH: ${{ vars.PULSO_WEB_SEARCH }}
+          PULSO_MAX_EDITION_USD: ${{ vars.PULSO_MAX_EDITION_USD }}
+          MODELOS: ${{ inputs.tarefa == 'modelos' }}
+          FORCAR: ${{ inputs.forcar == true }}
+          INICIAR: ${{ inputs.iniciar == true }}
+        run: |
+          args=()
+          if [ "$MODELOS" = "true" ]; then args+=(--catalogue); fi
+          if [ "$FORCAR" = "true" ]; then args+=(--force); fi
+          if [ "$INICIAR" = "true" ]; then args+=(--init); fi
+          npm run kitchen -- "${args[@]}"
+
+      # Nada novo para publicar, mas o site mostra mesmo a edição que a cozinha tem? Se a corrida
+      # anterior caiu entre a cozinha e o deploy, esta é a que republica.
+      - name: Conferir o site no ar
+        id: live
+        if: steps.kitchen.outputs.publish != 'true' && steps.kitchen.outputs.edition != ''
+        env:
+          EDITION: ${{ steps.kitchen.outputs.edition }}
+        run: node scripts/site-live.mjs --edition "$EDITION" || echo "stale=true" >> "$GITHUB_OUTPUT"
+
+      - name: Avisar o monitor da falha
+        if: failure() && env.HEALTHCHECKS_URL != ''
+        run: curl -fsS -m 10 --retry 3 -o /dev/null "$HEALTHCHECKS_URL/fail" || true
+
+  site:
+    needs: cozinha
+    # Sem cozinha (push na main, pedido de "site"), o site é refeito com o que já está publicado.
+    if: >-
+      !cancelled() && vars.PULSO_PUBLICAR == 'true' && github.ref == 'refs/heads/main' &&
+      (needs.cozinha.result == 'skipped' ||
+       (needs.cozinha.result == 'success' && needs.cozinha.outputs.publish == 'true'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+      # No dependency runs code at install time: scripts are skipped, then only the two packages
+      # that must build a native binary are rebuilt (the list approved in package.json allowScripts).
+      - run: npm ci --ignore-scripts
+      - run: npm rebuild better-sqlite3 esbuild
+
+      # Só leitura, com um token que só lê: escreve data/editions (e data/editions/weekly).
+      - name: Baixar as edições
+        env:
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_READ_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_READ_SECRET_ACCESS_KEY }}
+        run: npm run kitchen:export
+
+      - run: npm run build:site
+      - run: npm run verify:site
+      - run: npm run budget:bundle
+      - run: npm run a11y
+
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: dist-site
+
+  deploy:
+    needs: site
+    if: ${{ !cancelled() && needs.site.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+
+  # O que o monitor recebe é o que o leitor vê: sucesso só quando o site no ar mostra a edição.
+  conferencia:
+    needs: [cozinha, site, deploy]
+    if: ${{ always() && needs.cozinha.result != 'skipped' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    permissions:
+      contents: read
+      # Reativar o próprio agendamento: o GitHub desliga o de um repositório público após 60 dias
+      # sem atividade, e a cozinha não faz commit.
+      actions: write
+    env:
+      HEALTHCHECKS_URL: ${{ secrets.HEALTHCHECKS_URL }}
+      HEALTHCHECKS_MODELOS_URL: ${{ secrets.HEALTHCHECKS_MODELOS_URL }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            scripts
+            frontend/src/lib/siteBase.ts
+
+      - name: Conferir o site no ar
+        id: check
+        env:
+          KITCHEN: ${{ needs.cozinha.result }}
+          PUBLISH: ${{ needs.cozinha.outputs.publish }}
+          DEPLOY: ${{ needs.deploy.result }}
+          EDITION: ${{ needs.cozinha.outputs.edition }}
+        run: |
+          if [ "$KITCHEN" != "success" ]; then echo "cozinha: $KITCHEN"; exit 1; fi
+          if [ "$PUBLISH" = "true" ] && [ "$DEPLOY" != "success" ]; then echo "deploy: $DEPLOY"; exit 1; fi
+          if [ -n "$EDITION" ]; then node scripts/site-live.mjs --edition "$EDITION" --wait 600; fi
+
+      - name: Avisar o monitor
+        if: always() && env.HEALTHCHECKS_URL != ''
+        env:
+          OUTCOME: ${{ steps.check.outcome }}
+        run: |
+          if [ "$OUTCOME" = "success" ]; then path=""; else path="/fail"; fi
+          curl -fsS -m 10 --retry 3 -o /dev/null "$HEALTHCHECKS_URL$path" || true
+
+      # Um segundo monitor, semanal, para o catálogo: uma segunda-feira sem captura não pode
+      # passar despercebida porque a edição do dia saiu.
+      - name: Avisar o monitor dos modelos
+        if: needs.cozinha.outputs.catalogue == 'captured' && steps.check.outcome == 'success' && env.HEALTHCHECKS_MODELOS_URL != ''
+        run: curl -fsS -m 10 --retry 3 -o /dev/null "$HEALTHCHECKS_MODELOS_URL" || true
+
+      - name: Manter o agendamento ativo
+        if: github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${GITHUB_REPOSITORY}/actions/workflows/publicar.yml/enable"

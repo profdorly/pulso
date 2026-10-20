@@ -1,0 +1,42 @@
+{
+  "name": "pulso",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Pulso — jornal diário de IA em português: cozinha de edição (feeds, modelos, checagens) e site estático",
+  "type": "module",
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=frontend",
+    "edition": "npm run edition --workspace=backend --",
+    "kitchen": "npm run kitchen --workspace=backend --",
+    "kitchen:export": "npm run kitchen:export --workspace=backend --",
+    "kitchen:import": "npm run kitchen:import --workspace=backend --",
+    "kitchen:weekly": "npm run kitchen:weekly --workspace=backend --",
+    "spike:auditor": "cd backend && npx tsx src/edition/auditorCli.ts",
+    "build": "npm run build --workspace=backend && npm run build --workspace=frontend",
+    "build:site": "node scripts/rasterize-og.mjs && npm run build --workspace=frontend && npm run build:ssr --workspace=frontend && node scripts/build-site.mjs && node scripts/rasterize-covers.mjs && node scripts/prerender.mjs",
+    "verify:site": "node scripts/verify-site.mjs",
+    "budget:bundle": "node scripts/bundle-budget.mjs",
+    "a11y": "node scripts/a11y.mjs",
+    "test:scripts": "node --test scripts/bundle-budget.test.mjs scripts/og-raster.test.mjs scripts/edition-paths.test.mjs scripts/prerender.test.mjs",
+    "test": "npm run test --workspace=backend && npm run test --workspace=frontend && npm run test:scripts",
+    "typecheck": "npm run typecheck --workspace=backend && npm run typecheck --workspace=frontend",
+    "lint": "npm run lint --workspace=backend && npm run lint --workspace=frontend"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
+    "axe-core": "4.10.3",
+    "jsdom": "^30.0.1"
+  },
+  "allowScripts": {
+    "better-sqlite3@13.0.3": true,
+    "esbuild@0.28.2": true,
+    "fsevents": false
+  }
+}

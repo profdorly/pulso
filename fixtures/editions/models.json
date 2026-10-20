@@ -1,0 +1,353 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-10-05T11:00:00.000Z",
+  "sources": [
+    "artificial-analysis"
+  ],
+  "sections": [
+    {
+      "modality": "language",
+      "group": "texto",
+      "availableMetrics": [
+        "intelligence-index",
+        "price-input-1m",
+        "price-output-1m",
+        "output-tokens-per-second"
+      ],
+      "models": [
+        {
+          "id": "alfa-max",
+          "name": "Modelo Exemplo Alfa (Máximo)",
+          "creator": "Laboratório Exemplo",
+          "modality": "language",
+          "observations": [
+            {
+              "metric": "intelligence-index",
+              "value": 61.2,
+              "source": "artificial-analysis",
+              "benchmark": "Artificial Analysis Intelligence Index",
+              "capturedAt": "2026-10-05T11:00:00.000Z",
+              "methodologyUrl": "https://artificialanalysis.ai/methodology"
+            },
+            {
+              "metric": "price-input-1m",
+              "value": 3,
+              "source": "artificial-analysis",
+              "benchmark": "Preço de tabela do provedor",
+              "capturedAt": "2026-10-05T11:00:00.000Z",
+              "methodologyUrl": "https://artificialanalysis.ai/methodology"
+            },
+            {
+              "metric": "price-output-1m",
+              "value": 15,
+              "source": "artificial-analysis",
+              "benchmark": "Preço de tabela do provedor",
+              "capturedAt": "2026-10-05T11:00:00.000Z",
+              "methodologyUrl": "https://artificialanalysis.ai/methodology"
+            },
+            {
+              "metric": "output-tokens-per-second",
+              "value": 80,
+              "source": "artificial-analysis",
+              "benchmark": "Medição de performance da Artificial Analysis (mediana)",
+              "capturedAt": "2026-10-05T11:00:00.000Z",
+              "methodologyUrl": "https://artificialanalysis.ai/methodology"
+            }
+          ]
+        },
+        {
+          "id": "alfa-baixo",
+          "name": "Modelo Exemplo Alfa (Baixo)",
+          "creator": "Laboratório Exemplo",
+          "modality": "language",
+          "observations": [
+            {
+              "metric": "intelligence-index",
+              "value": 55.0,
+              "source": "artificial-analysis",
+              "benchmark": "Artificial Analysis Intelligence Index",
+              "capturedAt": "2026-10-05T11:00:00.000Z",
+              "methodologyUrl": "https://artificialanalysis.ai/methodology"
+            },
+            {
+              "metric": "price-input-1m",
+              "value": 3,
+              "source": "artificial-analysis",
+              "benchmark": "Preço de tabela do provedor",
+              "capturedAt": "2026-10-05T11:00:00.000Z",
+              "methodologyUrl": "https://artificialanalysis.ai/methodology"
+            },
+            {
+              "metric": "price-output-1m",
+              "value": 15,
+              "source": "artificial-analysis",
+              "benchmark": "Preço de tabela do provedor",
+              "capturedAt": "2026-10-05T11:00:00.000Z",
+              "methodologyUrl": "https://artificialanalysis.ai/methodology"
+            },
+            {
+              "metric": "output-tokens-per-second",
+              "value": 95,
+              "source": "artificial-analysis",
+              "benchmark": "Medição de performance da Artificial Analysis (mediana)",
+              "capturedAt": "2026-10-05T11:00:00.000Z",
+              "methodologyUrl": "https://artificialanalysis.ai/methodology"
+            }
+          ]
+        },
+        {
+          "id": "beta",
+          "name": "Modelo Exemplo Beta",
+          "creator": "Instituto Fictício",
+          "modality": "language",
+          "observations": [
+            {
+              "metric": "intelligence-index",
+              "value": 58.9,
+              "source": "artificial-analysis",
+              "benchmark": "Artificial Analysis Intelligence Index",
+              "capturedAt": "2026-10-05T11:00:00.000Z",
+              "methodologyUrl": "https://artificialanalysis.ai/methodology"
+            },
+            {
+              "metric": "price-input-1m",
+              "value": 0.5,
+              "source": "artificial-analysis",
+              "benchmark": "Preço de tabela do provedor",
+              "capturedAt": "2026-10-05T11:00:00.000Z",
+              "methodologyUrl": "https://artificialanalysis.ai/methodology"
+            },
+            {
+              "metric": "price-output-1m",
+              "value": 2,
+              "source": "artificial-analysis",
+              "benchmark": "Preço de tabela do provedor",
+              "capturedAt": "2026-10-05T11:00:00.000Z",
+              "methodologyUrl": "https://artificialanalysis.ai/methodology"
+            },
+            {
+              "metric": "output-tokens-per-second",
+              "value": 140,
+              "source": "artificial-analysis",
+              "benchmark": "Medição de performance da Artificial Analysis (mediana)",
+              "capturedAt": "2026-10-05T11:00:00.000Z",
+              "methodologyUrl": "https://artificialanalysis.ai/methodology"
+            }
+          ]
+        },
+        {
+          "id": "delta",
+          "name": "Modelo Exemplo Delta",
+          "creator": "Grupo Imaginário",
+          "modality": "language",
+          "observations": [
+            {
+              "metric": "intelligence-index",
+              "value": 49.5,
+              "source": "artificial-analysis",
+              "benchmark": "Artificial Analysis Intelligence Index",
+              "capturedAt": "2026-10-05T11:00:00.000Z",
+              "methodologyUrl": "https://artificialanalysis.ai/methodology"
+            },
+            {
+              "metric": "price-input-1m",
+              "value": 0.15,
+              "source": "artificial-analysis",
+              "benchmark": "Preço de tabela do provedor",
+              "capturedAt": "2026-10-05T11:00:00.000Z",
+              "methodologyUrl": "https://artificialanalysis.ai/methodology"
+            },
+            {
+              "metric": "price-output-1m",
+              "value": 0.6,
+              "source": "artificial-analysis",
+              "benchmark": "Preço de tabela do provedor",
+              "capturedAt": "2026-10-05T11:00:00.000Z",
+              "methodologyUrl": "https://artificialanalysis.ai/methodology"
+            },
+            {
+              "metric": "output-tokens-per-second",
+              "value": 260,
+              "source": "artificial-analysis",
+              "benchmark": "Medição de performance da Artificial Analysis (mediana)",
+              "capturedAt": "2026-10-05T11:00:00.000Z",
+              "methodologyUrl": "https://artificialanalysis.ai/methodology"
+            }
+          ]
+        },
+        {
+          "id": "gama",
+          "name": "Modelo Exemplo Gama",
+          "creator": "Coletivo Hipotético",
+          "modality": "language",
+          "observations": [
+            {
+              "metric": "intelligence-index",
+              "value": 47.3,
+              "source": "artificial-analysis",
+              "benchmark": "Artificial Analysis Intelligence Index",
+              "capturedAt": "2026-10-05T11:00:00.000Z",
+              "methodologyUrl": "https://artificialanalysis.ai/methodology"
+            }
+          ]
+        },
+        {
+          "id": "epsilon",
+          "name": "Modelo Exemplo Épsilon",
+          "creator": "Instituto Fictício",
+          "modality": "language",
+          "observations": [
+            {
+              "metric": "intelligence-index",
+              "value": 38.0,
+              "source": "artificial-analysis",
+              "benchmark": "Artificial Analysis Intelligence Index",
+              "capturedAt": "2026-10-05T11:00:00.000Z",
+              "methodologyUrl": "https://artificialanalysis.ai/methodology"
+            },
+            {
+              "metric": "price-input-1m",
+              "value": 0.05,
+              "source": "artificial-analysis",
+              "benchmark": "Preço de tabela do provedor",
+              "capturedAt": "2026-10-05T11:00:00.000Z",
+              "methodologyUrl": "https://artificialanalysis.ai/methodology"
+            },
+            {
+              "metric": "price-output-1m",
+              "value": 0.2,
+              "source": "artificial-analysis",
+              "benchmark": "Preço de tabela do provedor",
+              "capturedAt": "2026-10-05T11:00:00.000Z",
+              "methodologyUrl": "https://artificialanalysis.ai/methodology"
+            },
+            {
+              "metric": "output-tokens-per-second",
+              "value": 410,
+              "source": "artificial-analysis",
+              "benchmark": "Medição de performance da Artificial Analysis (mediana)",
+              "capturedAt": "2026-10-05T11:00:00.000Z",
+              "methodologyUrl": "https://artificialanalysis.ai/methodology"
+            }
+          ]
+        }
+      ],
+      "totalAvailable": 120,
+      "notes": []
+    },
+    {
+      "modality": "text-to-image",
+      "group": "imagem",
+      "availableMetrics": [
+        "arena-elo"
+      ],
+      "models": [
+        {
+          "id": "imagem-a",
+          "name": "Imagem Exemplo A",
+          "creator": "Laboratório Exemplo",
+          "modality": "text-to-image",
+          "observations": [
+            {
+              "metric": "arena-elo",
+              "value": 1210,
+              "source": "artificial-analysis",
+              "benchmark": "Text to Image Arena",
+              "confidence95": 9,
+              "capturedAt": "2026-10-05T11:00:00.000Z",
+              "methodologyUrl": "https://artificialanalysis.ai/methodology"
+            }
+          ]
+        },
+        {
+          "id": "imagem-b",
+          "name": "Imagem Exemplo B",
+          "creator": "Outro Laboratório",
+          "modality": "text-to-image",
+          "observations": [
+            {
+              "metric": "arena-elo",
+              "value": 1178,
+              "source": "artificial-analysis",
+              "benchmark": "Text to Image Arena",
+              "confidence95": 12,
+              "capturedAt": "2026-10-05T11:00:00.000Z",
+              "methodologyUrl": "https://artificialanalysis.ai/methodology"
+            }
+          ]
+        }
+      ],
+      "totalAvailable": 40,
+      "notes": []
+    }
+  ],
+  "coverage": [
+    {
+      "modality": "language",
+      "metric": "intelligence-index",
+      "withData": 6,
+      "total": 6
+    },
+    {
+      "modality": "language",
+      "metric": "price-input-1m",
+      "withData": 5,
+      "total": 6
+    },
+    {
+      "modality": "language",
+      "metric": "price-output-1m",
+      "withData": 5,
+      "total": 6
+    },
+    {
+      "modality": "language",
+      "metric": "output-tokens-per-second",
+      "withData": 5,
+      "total": 6
+    },
+    {
+      "modality": "text-to-image",
+      "metric": "arena-elo",
+      "withData": 2,
+      "total": 2
+    }
+  ],
+  "changes": {
+    "since": "2026-09-28T11:00:00.000Z",
+    "comparable": true,
+    "entered": [
+      {
+        "id": "epsilon",
+        "name": "Modelo Exemplo Épsilon",
+        "creator": "Instituto Fictício"
+      }
+    ],
+    "left": [
+      {
+        "id": "zeta",
+        "name": "Modelo Exemplo Zeta",
+        "creator": "Grupo Imaginário"
+      }
+    ],
+    "moved": [
+      {
+        "id": "beta",
+        "name": "Modelo Exemplo Beta",
+        "creator": "Instituto Fictício",
+        "metric": "price-input-1m",
+        "before": 1,
+        "after": 0.5
+      },
+      {
+        "id": "alfa-max",
+        "name": "Modelo Exemplo Alfa (Máximo)",
+        "creator": "Laboratório Exemplo",
+        "metric": "intelligence-index",
+        "before": 59.1,
+        "after": 61.2
+      }
+    ],
+    "leaders": []
+  }
+}

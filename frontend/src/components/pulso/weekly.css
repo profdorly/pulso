@@ -1,0 +1,477 @@
+/*
+ * Pulso da Semana: cover card, player and follow-along transcript.
+ *
+ * Loaded only by the lazy weekly modules, so it ships in their chunk and leaves the critical CSS
+ * alone. Uses the Papel & Brasa tokens from index.css; no new colours.
+ */
+@layer components {
+  /* The light-mode brasa gradient in both themes: in dark mode --brasa-light turns into a
+     dim wash, which made the waveform and the speaker marks disappear. */
+  .pulso-weekly,
+  .pulso-weekly-card {
+    --weekly-ember: linear-gradient(150deg, #f0b35a 0%, #ec8f6e 45%, #d97f8c 75%, #b07a9e 100%);
+  }
+
+  /* Cover card */
+  .pulso-weekly-card {
+    display: grid;
+    gap: 1.75rem;
+    align-items: center;
+    padding: clamp(1.5rem, 4vw, 2.5rem);
+  }
+
+  @media (min-width: 768px) {
+    .pulso-weekly-card {
+      grid-template-columns: 7.5rem minmax(0, 1fr) auto;
+      gap: 2.5rem;
+    }
+  }
+
+  .pulso-weekly-card-wave {
+    display: flex;
+    height: 4.5rem;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .pulso-weekly-card-wave span {
+    flex: 1;
+    min-height: 6px;
+    border-radius: 999px;
+    background: var(--weekly-ember);
+    opacity: 0.85;
+  }
+
+  /* Utilities kept local: a Tailwind class used only here would land in the critical CSS. */
+  .pulso-weekly-disclosure {
+    max-width: 60ch;
+  }
+
+  .pulso-turn-group {
+    display: contents;
+  }
+
+  /* Page */
+  .pulso-weekly-body {
+    display: flex;
+    flex-direction: column;
+    gap: 3rem;
+  }
+
+  .pulso-weekly.is-docked {
+    padding-bottom: 7rem;
+  }
+
+  @media (min-width: 1024px) {
+    /* Clears the fixed theme toggle in the top-right corner. */
+    .pulso-weekly .pulso-aside {
+      position: sticky;
+      top: 6rem;
+    }
+  }
+
+  /* Player */
+  .pulso-player-slot {
+    min-height: 5.5rem;
+  }
+
+  .pulso-player {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.75rem 1rem;
+    align-items: center;
+    padding: 0.75rem 1rem 0.75rem 0.75rem;
+    border: 1px solid var(--brasa-line-strong);
+    border-radius: 1.75rem;
+    background: var(--brasa-glass);
+    box-shadow: var(--brasa-shadow-soft);
+    backdrop-filter: blur(14px);
+  }
+
+  @media (min-width: 640px) {
+    .pulso-player {
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      border-radius: 999px;
+    }
+  }
+
+  .pulso-weekly.is-docked .pulso-player {
+    position: fixed;
+    right: max(0.75rem, calc((100vw - 60rem) / 2));
+    bottom: 0.75rem;
+    left: max(0.75rem, calc((100vw - 60rem) / 2));
+    z-index: 35;
+  }
+
+  .pulso-player-play {
+    display: inline-flex;
+    width: 52px;
+    height: 52px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: var(--brasa-ink);
+    color: var(--brasa-canvas);
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: transform 0.3s var(--ease-out-expo);
+  }
+
+  .pulso-player-play:hover {
+    transform: scale(1.04);
+  }
+
+  .pulso-player-main {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+
+  .pulso-player-now {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    font-size: 0.875rem;
+  }
+
+  .pulso-player-chapter {
+    overflow: hidden;
+    color: var(--brasa-ink);
+    font-weight: 500;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .pulso-player-clock {
+    flex: none;
+    color: var(--brasa-muted);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pulso-player-range {
+    width: 100%;
+    height: 24px;
+    appearance: none;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .pulso-player-range::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--brasa-ink) var(--progress, 0%), var(--brasa-line-strong) var(--progress, 0%));
+  }
+
+  .pulso-player-range::-moz-range-track {
+    height: 4px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--brasa-ink) var(--progress, 0%), var(--brasa-line-strong) var(--progress, 0%));
+  }
+
+  .pulso-player-range::-webkit-slider-thumb {
+    width: 14px;
+    height: 14px;
+    margin-top: -5px;
+    appearance: none;
+    border-radius: 999px;
+    background: var(--brasa-ink);
+    box-shadow: 0 0 0 3px var(--brasa-canvas);
+  }
+
+  .pulso-player-range::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--brasa-ink);
+  }
+
+  .pulso-player-tools {
+    display: flex;
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+    gap: 0.25rem;
+  }
+
+  @media (min-width: 640px) {
+    .pulso-player-tools {
+      grid-column: auto;
+    }
+  }
+
+  .pulso-player-tool {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 0.6rem;
+    border-radius: 999px;
+    color: var(--brasa-muted);
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pulso-player-tool:hover {
+    background: var(--brasa-casca);
+    color: var(--brasa-ink);
+  }
+
+  /* Transcript */
+  .pulso-transcript {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-top: 1.5rem;
+  }
+
+  .pulso-transcript-chapter {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    margin: 2.25rem 0 0.75rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--brasa-line-strong);
+    color: var(--brasa-ink);
+    font-family: var(--font-serif);
+    font-size: clamp(1.375rem, 2.2vw, 1.625rem);
+    font-weight: 500;
+    letter-spacing: -0.015em;
+    line-height: 1.2;
+  }
+
+  .pulso-transcript-chapter:first-child {
+    margin-top: 0;
+  }
+
+  .pulso-turn {
+    position: relative;
+    display: grid;
+    gap: 0.4rem 1.5rem;
+    padding: 1rem 1.25rem;
+    border-radius: 1.125rem;
+    scroll-margin: 6rem 0 8rem;
+    transition: background-color 0.35s var(--ease-out-expo);
+  }
+
+  @media (min-width: 768px) {
+    .pulso-turn {
+      grid-template-columns: 8rem minmax(0, 1fr);
+    }
+
+    .pulso-turn-refs {
+      grid-column: 2;
+    }
+  }
+
+  .pulso-turn::before {
+    content: "";
+    position: absolute;
+    top: 1rem;
+    bottom: 1rem;
+    left: 0;
+    width: 3px;
+    border-radius: 999px;
+    background: var(--weekly-ember);
+    opacity: 0;
+    transition: opacity 0.35s var(--ease-out-expo);
+  }
+
+  .pulso-turn[data-active] {
+    background: var(--brasa-casca);
+  }
+
+  .pulso-turn[data-active]::before {
+    opacity: 1;
+  }
+
+  .pulso-turn-head {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+  }
+
+  @media (min-width: 768px) {
+    .pulso-turn-head {
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+  }
+
+  .pulso-turn-who {
+    color: var(--brasa-muted);
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .pulso-turn[data-speaker="host"] .pulso-turn-who::before {
+    content: "";
+    display: inline-block;
+    width: 0.5rem;
+    height: 0.5rem;
+    margin-right: 0.45rem;
+    border-radius: 999px;
+    background: var(--weekly-ember);
+    vertical-align: 0.05em;
+  }
+
+  .pulso-turn[data-speaker="analyst"] .pulso-turn-who::before {
+    content: "";
+    display: inline-block;
+    width: 0.5rem;
+    height: 0.5rem;
+    margin-right: 0.45rem;
+    border: 1.5px solid var(--brasa-ink);
+    border-radius: 999px;
+    vertical-align: 0.05em;
+  }
+
+  .pulso-turn[data-active] .pulso-turn-who {
+    color: var(--brasa-ink);
+  }
+
+  .pulso-turn-time {
+    min-height: 32px;
+    color: var(--brasa-muted);
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+    text-align: left;
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    text-underline-offset: 0.25em;
+  }
+
+  .pulso-turn-time:hover {
+    color: var(--brasa-ink);
+    text-decoration-color: currentColor;
+  }
+
+  .pulso-turn-text {
+    max-width: 64ch;
+    color: var(--brasa-ink);
+    cursor: pointer;
+    font-size: clamp(1.0625rem, 1.4vw, 1.125rem);
+    line-height: 1.75;
+  }
+
+  .pulso-turn-text span {
+    border-radius: 0.3em;
+    transition:
+      color 0.2s ease,
+      background-color 0.2s ease;
+  }
+
+  .pulso-turn-text span:hover {
+    text-decoration: underline;
+    text-decoration-color: var(--brasa-line-strong);
+    text-underline-offset: 0.25em;
+  }
+
+  /* While a turn plays, what is still to be said recedes and the spoken word is marked. */
+  .pulso-turn[data-active] .pulso-turn-text span {
+    color: var(--brasa-muted);
+  }
+
+  .pulso-turn[data-active] .pulso-turn-text span[data-s="p"] {
+    color: var(--brasa-ink);
+  }
+
+  .pulso-turn[data-active] .pulso-turn-text span[data-s="c"] {
+    background: color-mix(in srgb, #ec8f6e 24%, transparent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, #ec8f6e 24%, transparent);
+    color: var(--brasa-ink);
+  }
+
+  .pulso-turn-refs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.35rem;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pulso-turn,
+    .pulso-turn::before,
+    .pulso-turn-text span {
+      transition: none;
+    }
+  }
+
+  /* Chapters */
+  .pulso-chapters {
+    padding: 1.5rem;
+  }
+
+  .pulso-chapters ol {
+    margin-top: 1rem;
+  }
+
+  .pulso-chapters button {
+    display: grid;
+    width: 100%;
+    min-height: 44px;
+    grid-template-columns: 3.25rem minmax(0, 1fr);
+    gap: 0.5rem;
+    align-items: baseline;
+    padding: 0.7rem 0;
+    border-top: 1px solid var(--brasa-line);
+    color: var(--brasa-muted);
+    cursor: pointer;
+    font-size: 0.9375rem;
+    line-height: 1.4;
+    text-align: left;
+  }
+
+  .pulso-chapters li:first-child button {
+    border-top: 0;
+  }
+
+  .pulso-chapters button:hover,
+  .pulso-chapters button[aria-current] {
+    color: var(--brasa-ink);
+  }
+
+  .pulso-chapters button[aria-current] {
+    font-weight: 600;
+  }
+
+  .pulso-chapters-time {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pulso-chapters-thesis {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--brasa-line-strong);
+    color: var(--brasa-ink);
+    font-size: 0.9375rem;
+    line-height: 1.6;
+  }
+
+  .pulso-follow {
+    position: fixed;
+    bottom: 7.25rem;
+    left: 50%;
+    z-index: 36;
+    transform: translateX(-50%);
+    box-shadow: var(--brasa-shadow-soft);
+  }
+
+  @media (max-width: 639px) {
+    .pulso-follow {
+      bottom: 9.5rem;
+    }
+  }
+}

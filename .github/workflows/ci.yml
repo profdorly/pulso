@@ -1,0 +1,81 @@
+# Checks every push and pull request. No secrets: the site is built from the synthetic editions in
+# fixtures/editions, so a fork's pull request runs the same checks as the main branch.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+# A newer push to the same branch makes the older run moot.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+      # No dependency runs code at install time: scripts are skipped, then only the two packages
+      # that must build a native binary are rebuilt (the list approved in package.json allowScripts).
+      - run: npm ci --ignore-scripts
+      - run: npm rebuild better-sqlite3 esbuild
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+
+  # The publishing path, on fixtures: a break in SSR, prerender or site assembly shows up here
+  # before it reaches the scheduled publish.
+  site:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+      # No dependency runs code at install time: scripts are skipped, then only the two packages
+      # that must build a native binary are rebuilt (the list approved in package.json allowScripts).
+      - run: npm ci --ignore-scripts
+      - run: npm rebuild better-sqlite3 esbuild
+      - run: npm run build:site
+      - run: npm run verify:site
+      - run: npm run budget:bundle
+      # Declared limit: jsdom does no layout, so colour contrast is NOT covered.
+      # The script prints what it could not check on every run.
+      - run: npm run a11y
+
+  # A key in a commit is caught here as well as by GitHub's push protection: this also covers
+  # pull requests from forks, and history, not only the new commit.
+  secrets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Varredura de segredos (gitleaks 8.30.1, binário conferido por hash)
+        env:
+          GITLEAKS_VERSION: 8.30.1
+          GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+        run: |
+          curl -fsSL -o gitleaks.tgz "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256}  gitleaks.tgz" | sha256sum -c -
+          tar xzf gitleaks.tgz gitleaks
+          ./gitleaks git . --redact --no-banner --exit-code 1

@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "latestId": "2026-10-10-manha",
+  "editions": [
+    {
+      "id": "2026-10-10-manha",
+      "slot": "manha",
+      "calendarDate": "2026-10-10",
+      "capturedAt": "2026-10-10T10:34:00.000Z",
+      "number": 92,
+      "headline": "Chips para IA dominam o dia, com nova fábrica na Ásia",
+      "path": "/2026-10-10/"
+    },
+    {
+      "id": "2026-10-09-manha",
+      "slot": "manha",
+      "calendarDate": "2026-10-09",
+      "capturedAt": "2026-10-09T10:34:00.000Z",
+      "number": 91,
+      "headline": "Laboratório lança modelo menor e agências testam regras de uso",
+      "path": "/2026-10-09/"
+    }
+  ]
+}

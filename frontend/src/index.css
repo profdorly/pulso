@@ -1,0 +1,1330 @@
+@import "tailwindcss";
+
+/* Self-hosted subsets (SIL OFL 1.1, see public/fonts/OFL.txt). In the stylesheet rather than
+   inline in every page: it is downloaded once and cached. The three critical ones are preloaded
+   from index.html. */
+@font-face{font-family:'Playfair Display';font-style:normal;font-weight:500;font-display:swap;src:url('/fonts/playfair-display-500-latin.woff2') format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'Playfair Display';font-style:normal;font-weight:500;font-display:swap;src:url('/fonts/playfair-display-500-latin-ext.woff2') format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:'IBM Plex Sans';font-style:normal;font-weight:400;font-display:swap;ascent-override:90.53%;descent-override:21.19%;line-gap-override:3.27%;src:url('/fonts/ibm-plex-sans-400-latin.woff2') format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'IBM Plex Sans';font-style:normal;font-weight:400;font-display:swap;ascent-override:90.53%;descent-override:21.19%;line-gap-override:3.27%;src:url('/fonts/ibm-plex-sans-400-latin-ext.woff2') format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:'IBM Plex Sans';font-style:normal;font-weight:500;font-display:swap;ascent-override:90.53%;descent-override:21.19%;line-gap-override:3.27%;src:url('/fonts/ibm-plex-sans-500-latin.woff2') format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'IBM Plex Sans';font-style:normal;font-weight:500;font-display:swap;ascent-override:90.53%;descent-override:21.19%;line-gap-override:3.27%;src:url('/fonts/ibm-plex-sans-500-latin-ext.woff2') format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:'IBM Plex Sans';font-style:normal;font-weight:600;font-display:swap;ascent-override:90.53%;descent-override:21.19%;line-gap-override:3.27%;src:url('/fonts/ibm-plex-sans-600-latin.woff2') format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'IBM Plex Sans';font-style:normal;font-weight:600;font-display:swap;ascent-override:90.53%;descent-override:21.19%;line-gap-override:3.27%;src:url('/fonts/ibm-plex-sans-600-latin-ext.woff2') format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:'IBM Plex Mono';font-style:normal;font-weight:400;font-display:swap;ascent-override:83.25%;descent-override:30.03%;line-gap-override:0%;src:url('/fonts/ibm-plex-mono-400-latin.woff2') format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'IBM Plex Mono';font-style:normal;font-weight:400;font-display:swap;ascent-override:83.25%;descent-override:30.03%;line-gap-override:0%;src:url('/fonts/ibm-plex-mono-400-latin-ext.woff2') format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:'IBM Plex Mono';font-style:normal;font-weight:500;font-display:swap;ascent-override:83.25%;descent-override:30.03%;line-gap-override:0%;src:url('/fonts/ibm-plex-mono-500-latin.woff2') format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'IBM Plex Mono';font-style:normal;font-weight:500;font-display:swap;ascent-override:83.25%;descent-override:30.03%;line-gap-override:0%;src:url('/fonts/ibm-plex-mono-500-latin-ext.woff2') format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:'IBM Plex Mono';font-style:normal;font-weight:600;font-display:swap;ascent-override:83.25%;descent-override:30.03%;line-gap-override:0%;src:url('/fonts/ibm-plex-mono-600-latin.woff2') format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'IBM Plex Mono';font-style:normal;font-weight:600;font-display:swap;ascent-override:83.25%;descent-override:30.03%;line-gap-override:0%;src:url('/fonts/ibm-plex-mono-600-latin-ext.woff2') format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+
+
+/*
+ * Papel & Brasa for the Pulso reader. Canonical contract: dorly.com.br/DESIGN.md.
+ *
+ * Everything below lives in a cascade layer on purpose. Unlayered rules beat every Tailwind
+ * utility regardless of specificity, so a global `:focus-visible` or `h1 { line-height }`
+ * outside a layer silently cancelled `outline-none` and `leading-*` wherever they were used.
+ */
+
+@theme inline {
+  --color-background: var(--brasa-canvas);
+  --color-card: var(--brasa-card);
+  --color-primary: var(--brasa-ink);
+  --color-primary-foreground: var(--brasa-canvas);
+  --color-secondary: var(--brasa-ink);
+  --color-muted: var(--brasa-muted);
+  --color-accent: var(--brasa-ink);
+  --color-ember: var(--brasa-muted);
+  --color-border: var(--brasa-line);
+  --color-border-strong: var(--brasa-line-strong);
+  --font-sans: "IBM Plex Sans", system-ui, sans-serif;
+  --font-serif: "Playfair Display", Georgia, "Times New Roman", serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --ease-out-expo: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* Tokens. The dark block appears twice (system preference and explicit choice) because CSS
+   cannot join a media query and an attribute selector; keep both identical. */
+:root {
+  color-scheme: light;
+  --brasa-canvas: #fbf7f2;
+  --brasa-ink: #17120f;
+  --brasa-muted: #6b625b;
+  --brasa-card: rgba(255, 253, 250, 0.86);
+  --brasa-line: rgba(23, 18, 15, 0.1);
+  --brasa-line-strong: rgba(23, 18, 15, 0.24);
+  --brasa-casca: rgba(23, 18, 15, 0.025);
+  --brasa-casca-linha: rgba(23, 18, 15, 0.07);
+  --brasa-glass: rgba(251, 247, 242, 0.78);
+  --brasa-grain-blend: multiply;
+  --brasa-grain-opacity: 0.035;
+  --brasa-shadow: 0 32px 64px -32px rgba(92, 58, 44, 0.28);
+  --brasa-shadow-soft: 0 14px 34px rgba(92, 58, 44, 0.12);
+  --brasa-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  --brasa-background:
+    radial-gradient(ellipse 70% 45% at 88% 0%, rgba(236, 143, 110, 0.1), transparent 70%),
+    linear-gradient(180deg, #fbf7f2 0%, #fbf7f2 62%, #f5e2d6 100%);
+  --brasa-light: linear-gradient(150deg, #f0b35a 0%, #ec8f6e 45%, #d97f8c 75%, #b07a9e 100%);
+  --brasa-shell-x: 1.25rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-brasa-mode="claro"]) {
+    color-scheme: dark;
+    --brasa-canvas: #110d0b;
+    --brasa-ink: #f4ede6;
+    --brasa-muted: #a69c94;
+    --brasa-card: rgba(22, 17, 14, 0.86);
+    --brasa-line: rgba(244, 237, 230, 0.1);
+    --brasa-line-strong: rgba(244, 237, 230, 0.24);
+    --brasa-casca: rgba(244, 237, 230, 0.035);
+    --brasa-casca-linha: rgba(244, 237, 230, 0.09);
+    --brasa-glass: rgba(17, 13, 11, 0.74);
+    --brasa-grain-blend: overlay;
+    --brasa-grain-opacity: 0.03;
+    --brasa-shadow: 0 32px 64px -32px rgba(0, 0, 0, 0.7);
+    --brasa-shadow-soft: 0 14px 34px rgba(0, 0, 0, 0.35);
+    --brasa-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    --brasa-background:
+      radial-gradient(ellipse 70% 45% at 88% 0%, rgba(236, 143, 110, 0.12), transparent 70%),
+      #110d0b;
+    --brasa-light:
+      radial-gradient(120% 90% at 0% 0%, rgba(240, 179, 90, 0.3), transparent 60%),
+      radial-gradient(110% 90% at 100% 100%, rgba(176, 122, 158, 0.32), transparent 60%),
+      radial-gradient(90% 80% at 65% 35%, rgba(236, 143, 110, 0.3), transparent 70%),
+      #16110e;
+  }
+}
+
+:root[data-brasa-mode="escuro"] {
+  color-scheme: dark;
+  --brasa-canvas: #110d0b;
+  --brasa-ink: #f4ede6;
+  --brasa-muted: #a69c94;
+  --brasa-card: rgba(22, 17, 14, 0.86);
+  --brasa-line: rgba(244, 237, 230, 0.1);
+  --brasa-line-strong: rgba(244, 237, 230, 0.24);
+  --brasa-casca: rgba(244, 237, 230, 0.035);
+  --brasa-casca-linha: rgba(244, 237, 230, 0.09);
+  --brasa-glass: rgba(17, 13, 11, 0.74);
+  --brasa-grain-blend: overlay;
+  --brasa-grain-opacity: 0.03;
+  --brasa-shadow: 0 32px 64px -32px rgba(0, 0, 0, 0.7);
+  --brasa-shadow-soft: 0 14px 34px rgba(0, 0, 0, 0.35);
+  --brasa-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --brasa-background:
+    radial-gradient(ellipse 70% 45% at 88% 0%, rgba(236, 143, 110, 0.12), transparent 70%),
+    #110d0b;
+  --brasa-light:
+    radial-gradient(120% 90% at 0% 0%, rgba(240, 179, 90, 0.3), transparent 60%),
+    radial-gradient(110% 90% at 100% 100%, rgba(176, 122, 158, 0.32), transparent 60%),
+    radial-gradient(90% 80% at 65% 35%, rgba(236, 143, 110, 0.3), transparent 70%),
+    #16110e;
+}
+
+@layer base {
+  * {
+    border-color: var(--brasa-line);
+  }
+
+  html {
+    background: var(--brasa-canvas);
+    scroll-behavior: smooth;
+  }
+
+  body {
+    min-width: 320px;
+    min-height: 100vh;
+    overflow-x: hidden;
+    background: var(--brasa-background);
+    color: var(--brasa-ink);
+    font-family: var(--font-sans);
+    line-height: 1.75;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    text-wrap: balance;
+  }
+
+  p,
+  li {
+    text-wrap: pretty;
+  }
+
+  a,
+  button {
+    transition:
+      color 0.3s var(--ease-out-expo),
+      background-color 0.3s var(--ease-out-expo),
+      border-color 0.3s var(--ease-out-expo),
+      text-decoration-color 0.3s var(--ease-out-expo),
+      transform 0.45s var(--ease-out-expo),
+      box-shadow 0.45s var(--ease-out-expo);
+  }
+
+  :focus-visible {
+    outline: 2px solid #b07a9e;
+    outline-offset: 3px;
+  }
+
+  ::selection {
+    background: rgba(176, 122, 158, 0.3);
+    color: var(--brasa-ink);
+  }
+
+  table {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  /* Shell */
+  .brasa-atmosphere {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    mix-blend-mode: var(--brasa-grain-blend);
+    opacity: var(--brasa-grain-opacity);
+  }
+
+  .pulso-shell {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(3.5rem, 7vw, 5.5rem);
+    width: 100%;
+    max-width: 72rem;
+    margin-inline: auto;
+    padding: 5rem var(--brasa-shell-x) 3rem;
+  }
+
+  .pulso-page {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(4rem, 8vw, 7rem);
+  }
+
+  /* Sidebar layout shared by the cover and the edition: news column plus a fixed-width rail,
+     so the models card keeps one width everywhere instead of a fraction of the page. */
+  .pulso-split {
+    display: grid;
+    gap: 3.5rem;
+  }
+
+  .pulso-aside {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  @media (min-width: 1024px) {
+    .pulso-split {
+      grid-template-columns: minmax(0, 1fr) 20rem;
+      gap: 4rem;
+      align-items: start;
+    }
+
+    .pulso-aside {
+      position: sticky;
+      top: 6rem;
+    }
+  }
+
+  @media (min-width: 1100px) {
+    .pulso-split {
+      grid-template-columns: minmax(0, 1fr) 21.5rem;
+      gap: 5rem;
+    }
+  }
+
+  /* Masthead */
+  .pulso-masthead {
+    position: relative;
+    padding-block: 1.75rem 2rem;
+    border-bottom: 1px solid var(--brasa-line-strong);
+  }
+
+  .pulso-masthead::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4.5rem;
+    height: 3px;
+    background: var(--brasa-light);
+  }
+
+  .pulso-wordmark {
+    display: block;
+    width: fit-content;
+    color: var(--brasa-ink);
+    font-family: var(--font-serif);
+    font-size: clamp(3rem, 7vw, 4.5rem);
+    font-weight: 500;
+    letter-spacing: -0.045em;
+    line-height: 1;
+  }
+
+  .pulso-nav-link {
+    position: relative;
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    color: var(--brasa-muted);
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    letter-spacing: 0.04em;
+  }
+
+  .pulso-nav-link::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    bottom: 6px;
+    left: 0;
+    height: 1px;
+    background: var(--brasa-ink);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.4s var(--ease-out-expo);
+  }
+
+  .pulso-nav-link:hover,
+  .pulso-nav-link[aria-current="page"] {
+    color: var(--brasa-ink);
+  }
+
+  .pulso-nav-link:hover::after,
+  .pulso-nav-link[aria-current="page"]::after {
+    transform: scaleX(1);
+  }
+
+  .brand-logo--dark {
+    display: none;
+  }
+
+  .pulso-skip {
+    position: fixed;
+    top: 0.75rem;
+    left: -999px;
+    z-index: 60;
+    min-height: 44px;
+    padding: 0.6rem 1rem;
+    border-radius: 999px;
+    background: var(--brasa-ink);
+    color: var(--brasa-canvas);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .pulso-skip:focus {
+    left: 0.75rem;
+  }
+
+  /* Type */
+  .pulso-display,
+  .pulso-title,
+  .pulso-section-title {
+    color: var(--brasa-ink);
+    font-family: var(--font-serif);
+    font-weight: 500;
+  }
+
+  .pulso-display {
+    max-width: 15ch;
+    font-size: clamp(2.75rem, 5.6vw, 4.75rem);
+    letter-spacing: -0.04em;
+    line-height: 1.02;
+  }
+
+  .pulso-title {
+    max-width: 20ch;
+    font-size: clamp(2.375rem, 4.6vw, 3.75rem);
+    letter-spacing: -0.035em;
+    line-height: 1.06;
+  }
+
+  .pulso-section-title {
+    font-size: clamp(1.625rem, 2.8vw, 2.25rem);
+    letter-spacing: -0.025em;
+    line-height: 1.12;
+  }
+
+  .pulso-lede {
+    max-width: 60ch;
+    color: var(--brasa-ink);
+    font-size: clamp(1.0625rem, 1.5vw, 1.25rem);
+    line-height: 1.7;
+  }
+
+  .pulso-prose {
+    display: flex;
+    max-width: 62ch;
+    flex-direction: column;
+    gap: 1.25rem;
+    font-size: clamp(1.0625rem, 1.4vw, 1.1875rem);
+    line-height: 1.8;
+  }
+
+  .pulso-prose--compact {
+    gap: 1rem;
+    font-size: 1rem;
+    line-height: 1.75;
+  }
+
+  .pulso-kicker,
+  .pulso-meta,
+  .pulso-editionline {
+    color: var(--brasa-muted);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    line-height: 1.6;
+    text-transform: uppercase;
+  }
+
+  /* Sentences never go uppercase: these carry notes, coverage and failures, not labels. */
+  .pulso-note {
+    color: var(--brasa-muted);
+    font-size: 0.875rem;
+    line-height: 1.6;
+  }
+
+  .pulso-editionline {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 0.75rem;
+  }
+
+  .pulso-editionline > * + *::before {
+    content: "";
+    display: inline-block;
+    width: 1px;
+    height: 0.8em;
+    margin-right: 0.75rem;
+    background: var(--brasa-line-strong);
+    vertical-align: -0.05em;
+  }
+
+  /* On narrow screens the line wraps, and a hairline would open the second row. */
+  @media (max-width: 639px) {
+    .pulso-editionline > * + *::before {
+      display: none;
+    }
+  }
+
+  .pulso-edition-number {
+    color: var(--brasa-ink);
+    font-family: var(--font-mono);
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .pulso-tag {
+    display: inline-flex;
+    margin-left: 0.6rem;
+    padding: 0.1rem 0.55rem;
+    border: 1px solid var(--brasa-line-strong);
+    border-radius: 999px;
+    color: var(--brasa-ink);
+  }
+
+  /* Links and actions */
+  .pulso-link,
+  .pulso-action {
+    color: var(--brasa-ink);
+    text-decoration: underline;
+    text-decoration-color: var(--brasa-line-strong);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.26em;
+  }
+
+  .pulso-link {
+    font-weight: 600;
+  }
+
+  .pulso-action {
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+
+  .pulso-action--muted {
+    color: var(--brasa-muted);
+  }
+
+  .pulso-link:hover,
+  .pulso-action:hover {
+    color: var(--brasa-ink);
+    text-decoration-color: currentColor;
+  }
+
+  .pulso-button {
+    display: inline-flex;
+    min-height: 52px;
+    align-items: center;
+    justify-content: center;
+    gap: 0.8rem;
+    padding: 0 1.4rem;
+    border: 1px solid var(--brasa-ink);
+    border-radius: 999px;
+    background: var(--brasa-ink);
+    color: var(--brasa-canvas);
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    line-height: 1.3;
+    text-transform: uppercase;
+  }
+
+  /* Button-in-button: the orb only on actions that move the reader somewhere. */
+  .pulso-button--go {
+    padding-right: 0.45rem;
+  }
+
+  .pulso-button--go::after {
+    content: "→";
+    content: "→" / "";
+    display: inline-flex;
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--brasa-canvas) 16%, transparent);
+    transition: transform 0.45s var(--ease-out-expo);
+  }
+
+  .pulso-button:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: var(--brasa-shadow-soft);
+  }
+
+  .pulso-button--go:hover::after {
+    transform: translate(2px, -1px);
+  }
+
+  .pulso-button:active:not(:disabled),
+  .pulso-pill:active {
+    transform: scale(0.98);
+  }
+
+  .pulso-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.58;
+  }
+
+  /* Utility actions (share, copy): pills, lighter than a call to action. */
+  .pulso-pill {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    padding: 0 1.1rem;
+    border: 1px solid var(--brasa-line-strong);
+    border-radius: 999px;
+    color: var(--brasa-ink);
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .pulso-pill:hover {
+    border-color: var(--brasa-ink);
+  }
+
+  .pulso-pill--solid {
+    border-color: var(--brasa-ink);
+    background: var(--brasa-ink);
+    color: var(--brasa-canvas);
+  }
+
+  .pulso-chip {
+    display: inline-flex;
+    min-height: 2rem;
+    align-items: center;
+    padding: 0 0.75rem;
+    border: 1px solid var(--brasa-line-strong);
+    border-radius: 999px;
+    color: var(--brasa-muted);
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .pulso-chip:hover {
+    border-color: var(--brasa-ink);
+    color: var(--brasa-ink);
+  }
+
+  @media (pointer: coarse) {
+    .pulso-chip {
+      min-height: 44px;
+    }
+  }
+
+  /* Surfaces */
+  .pulso-page-header,
+  .pulso-panel {
+    position: relative;
+    border: 1px solid var(--brasa-line);
+    background: var(--brasa-card);
+    box-shadow:
+      0 0 0 6px var(--brasa-casca),
+      0 0 0 7px var(--brasa-casca-linha),
+      var(--brasa-highlight),
+      var(--brasa-shadow);
+  }
+
+  .pulso-page-header {
+    overflow: hidden;
+    padding: clamp(1.5rem, 4.5vw, 3.5rem);
+    border-radius: 1.75rem;
+  }
+
+  .pulso-page-header::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 3px;
+    background: var(--brasa-light);
+  }
+
+  .pulso-panel {
+    border-radius: 1.375rem;
+  }
+
+  .pulso-quiet {
+    padding: 1.5rem;
+  }
+
+  .pulso-light-block {
+    padding: clamp(1.75rem, 5vw, 3.5rem);
+    border-radius: 2rem;
+    background: var(--brasa-light);
+    box-shadow: var(--brasa-shadow-soft);
+    color: var(--brasa-ink);
+  }
+
+  .pulso-light-block .pulso-kicker {
+    color: var(--brasa-ink);
+  }
+
+  .pulso-subscribe {
+    display: grid;
+    gap: 1.75rem;
+    align-items: center;
+  }
+
+  @media (min-width: 768px) {
+    .pulso-subscribe {
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 3rem;
+    }
+  }
+
+  /* Edition table of contents: chips above the news on small screens, a card in the sticky
+     sidebar on large ones. One of the two is always hidden. */
+  .pulso-contents ol {
+    margin-top: 0.75rem;
+  }
+
+  .pulso-contents a {
+    display: flex;
+    min-height: 44px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    color: var(--brasa-ink);
+    font-size: 0.9375rem;
+    line-height: 1.35;
+  }
+
+  .pulso-contents a:hover span:first-child {
+    text-decoration: underline;
+    text-decoration-color: var(--brasa-line-strong);
+    text-underline-offset: 0.25em;
+  }
+
+  .pulso-contents-count {
+    flex: none;
+    color: var(--brasa-muted);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pulso-contents--aside {
+    display: none;
+    padding: 1.5rem;
+  }
+
+  .pulso-contents--aside li + li a {
+    border-top: 1px solid var(--brasa-line);
+  }
+
+  .pulso-contents--inline ol {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .pulso-contents--inline a {
+    gap: 0.6rem;
+    padding: 0 0.95rem;
+    border: 1px solid var(--brasa-line-strong);
+    border-radius: 999px;
+    font-size: 0.875rem;
+  }
+
+  @media (min-width: 1024px) {
+    .pulso-contents--inline {
+      display: none;
+    }
+
+    .pulso-contents--aside {
+      display: block;
+    }
+  }
+
+  /* A jump lands the heading clear of the fixed appearance toggle. */
+  .pulso-stories,
+  #em-resumo {
+    scroll-margin-top: 5.5rem;
+  }
+
+  /* Models card: a ranked list, not a row of three cramped columns. */
+  .pulso-models {
+    padding: 1.5rem;
+  }
+
+  .pulso-models-title {
+    font-size: 1.625rem;
+    letter-spacing: -0.02em;
+  }
+
+  .pulso-models .pulso-note {
+    margin-top: 0.15rem;
+  }
+
+  .pulso-rank {
+    margin-top: 1.25rem;
+  }
+
+  .pulso-rank li {
+    display: grid;
+    grid-template-columns: 1.25rem minmax(0, 1fr) auto;
+    gap: 0 0.75rem;
+    align-items: baseline;
+    padding: 0.9rem 0;
+    border-top: 1px solid var(--brasa-line);
+  }
+
+  .pulso-rank li:first-child {
+    padding-top: 0.25rem;
+    border-top: 0;
+  }
+
+  .pulso-rank-pos {
+    color: var(--brasa-muted);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+  }
+
+  .pulso-rank-name {
+    color: var(--brasa-ink);
+    font-size: 0.9375rem;
+    font-weight: 500;
+    line-height: 1.35;
+  }
+
+  .pulso-rank-name span {
+    display: block;
+    margin-top: 0.2rem;
+    color: var(--brasa-muted);
+    font-size: 0.8125rem;
+    font-weight: 400;
+    line-height: 1.4;
+  }
+
+  .pulso-rank-value {
+    color: var(--brasa-ink);
+    font-family: var(--font-serif);
+    font-size: 1.75rem;
+    font-variant-numeric: lining-nums tabular-nums;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+
+  .pulso-models-foot {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--brasa-line);
+  }
+
+  /* /modelos: ready lists, what changed, charts. All static HTML and SVG, coloured from the
+     same tokens as the rest of the page so both modes follow. */
+  .pulso-picks {
+    display: grid;
+    gap: 1.25rem;
+  }
+
+  @media (min-width: 768px) {
+    .pulso-picks {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  .pulso-pick-value {
+    color: var(--brasa-ink);
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .pulso-changes-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    max-width: 70ch;
+  }
+
+  .pulso-changes-list li {
+    padding-left: 1rem;
+    border-left: 2px solid var(--brasa-line-strong);
+    line-height: 1.5;
+  }
+
+  .pulso-changes-list strong {
+    font-weight: 600;
+  }
+
+  .pulso-charts {
+    display: grid;
+    gap: 1.25rem;
+  }
+
+  @media (min-width: 1024px) {
+    .pulso-charts {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  .pulso-chart {
+    margin: 0;
+    padding: 1.5rem;
+  }
+
+  .pulso-chart figcaption {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-bottom: 1rem;
+  }
+
+  .pulso-chart-title {
+    color: var(--brasa-ink);
+    font-family: var(--font-serif);
+    font-size: 1.25rem;
+    font-weight: 500;
+    letter-spacing: -0.015em;
+  }
+
+  .pulso-bars li {
+    display: grid;
+    grid-template-columns: minmax(0, 11rem) minmax(0, 1fr) 3.5rem;
+    gap: 0 0.75rem;
+    align-items: center;
+    padding: 0.45rem 0;
+  }
+
+  .pulso-bars li + li {
+    border-top: 1px solid var(--brasa-line);
+  }
+
+  /* A phone has no room for name, bar and value side by side: the name goes on its own line. */
+  @media (max-width: 639px) {
+    .pulso-bars li {
+      grid-template-columns: minmax(0, 1fr) 3.5rem;
+      gap: 0.35rem 0.75rem;
+    }
+
+    .pulso-bars-name {
+      grid-column: 1 / -1;
+    }
+  }
+
+  .pulso-bars-name {
+    color: var(--brasa-ink);
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.3;
+  }
+
+  .pulso-bars-name span {
+    display: block;
+    color: var(--brasa-muted);
+    font-size: 0.75rem;
+    font-weight: 400;
+  }
+
+  .pulso-bars-track {
+    display: block;
+    width: 100%;
+    height: 0.625rem;
+    background: var(--brasa-casca);
+  }
+
+  .pulso-bars-track rect {
+    fill: var(--brasa-ink);
+  }
+
+  .pulso-bars-value {
+    color: var(--brasa-ink);
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+
+  .pulso-map-wrap {
+    overflow-x: auto;
+  }
+
+  .pulso-map {
+    display: block;
+    width: 100%;
+    min-width: 46rem;
+    height: auto;
+    overflow: visible;
+  }
+
+  .pulso-map-grid line {
+    stroke: var(--brasa-line);
+    stroke-width: 1;
+  }
+
+  .pulso-map-grid text {
+    fill: var(--brasa-muted);
+    font-family: var(--font-mono);
+    font-size: 11px;
+  }
+
+  .pulso-map-front {
+    fill: none;
+    stroke: var(--brasa-ink);
+    stroke-width: 1.5;
+    stroke-dasharray: 4 3;
+  }
+
+  .pulso-map-dot {
+    fill: var(--brasa-muted);
+    fill-opacity: 0.55;
+  }
+
+  .pulso-map-dot--front {
+    fill: var(--brasa-ink);
+    fill-opacity: 1;
+  }
+
+  .pulso-map-label {
+    fill: var(--brasa-ink);
+    font-family: var(--font-sans);
+    font-size: 12px;
+    font-weight: 500;
+    paint-order: stroke;
+    stroke: var(--brasa-canvas);
+    stroke-width: 3px;
+  }
+
+  /* Digest */
+  .pulso-digest {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .pulso-digest li {
+    display: grid;
+    grid-template-columns: 2rem minmax(0, 1fr);
+    gap: 0.75rem;
+  }
+
+  .pulso-digest-pos {
+    padding-top: 0.3rem;
+    color: var(--brasa-muted);
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pulso-digest a {
+    color: var(--brasa-ink);
+    font-size: 1.0625rem;
+    line-height: 1.6;
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    text-underline-offset: 0.24em;
+  }
+
+  .pulso-digest a:hover {
+    text-decoration-color: currentColor;
+  }
+
+  .pulso-digest .pulso-meta {
+    display: block;
+    margin-top: 0.35rem;
+  }
+
+  /* Running lists: archive, topics, threads, search, front-page feed */
+  .pulso-section-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem 2rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .pulso-editorial-list {
+    border-top: 1px solid var(--brasa-line-strong);
+  }
+
+  .pulso-entry {
+    display: grid;
+    gap: 0.6rem 2.5rem;
+    padding: 1.6rem 0 1.75rem;
+    border-bottom: 1px solid var(--brasa-line);
+  }
+
+  @media (min-width: 768px) {
+    .pulso-entry:not(.pulso-entry--single) {
+      grid-template-columns: 12rem minmax(0, 1fr);
+    }
+  }
+
+  .pulso-entry-meta {
+    display: flex;
+    flex-direction: column;
+    color: var(--brasa-muted);
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+
+  .pulso-entry-meta .pulso-edition-number {
+    margin-bottom: 0.2rem;
+    font-size: 0.75rem;
+  }
+
+  .pulso-entry-title {
+    display: block;
+    max-width: 32ch;
+    color: var(--brasa-ink);
+    font-family: var(--font-serif);
+    font-size: clamp(1.375rem, 2.3vw, 1.75rem);
+    letter-spacing: -0.015em;
+    line-height: 1.2;
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.18em;
+  }
+
+  .pulso-entry-title:hover {
+    text-decoration-color: currentColor;
+  }
+
+  .pulso-pager {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--brasa-line-strong);
+  }
+
+  /* Edition stories */
+  .pulso-stories-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--brasa-line-strong);
+  }
+
+  .pulso-story {
+    padding: 1.75rem 0;
+    border-bottom: 1px solid var(--brasa-line);
+  }
+
+  .pulso-story-title {
+    display: block;
+    max-width: 40ch;
+    margin-top: 0.5rem;
+    color: var(--brasa-ink);
+    font-family: var(--font-serif);
+    font-size: 1.375rem;
+    letter-spacing: -0.015em;
+    line-height: 1.22;
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.18em;
+  }
+
+  .pulso-story-title:hover {
+    text-decoration-color: currentColor;
+  }
+
+  .pulso-stories--featured .pulso-story-title {
+    font-size: clamp(1.5rem, 2.6vw, 1.875rem);
+  }
+
+  .pulso-story-text {
+    max-width: 65ch;
+    margin-top: 0.75rem;
+    line-height: 1.75;
+  }
+
+  .pulso-story-text--muted {
+    color: var(--brasa-muted);
+  }
+
+  /* The summary opens in place: an item has no page of its own. */
+  .pulso-story-summary {
+    max-width: 65ch;
+    margin-top: 0.75rem;
+  }
+
+  .pulso-story-summary > summary {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--brasa-muted);
+  }
+
+  .pulso-story-summary > summary:hover,
+  .pulso-story-summary[open] > summary {
+    color: var(--brasa-ink);
+  }
+
+  .pulso-story-summary > .pulso-story-text:first-of-type {
+    margin-top: 0.25rem;
+  }
+
+  .pulso-story:target {
+    scroll-margin-top: 1.5rem;
+  }
+
+  .pulso-story-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1.25rem;
+    margin-top: 1.1rem;
+  }
+
+  /* Share row inside headers */
+  .pulso-share {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1.25rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--brasa-line);
+  }
+
+  .pulso-share--ruled {
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--brasa-line);
+  }
+
+  /* Data */
+  .pulso-metric {
+    padding: 1.1rem 1.25rem;
+    border: 1px solid var(--brasa-line);
+    border-radius: 1.375rem;
+    background: var(--brasa-card);
+    box-shadow: var(--brasa-highlight);
+  }
+
+  .pulso-alert {
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-style: double;
+    text-underline-offset: 0.2em;
+  }
+
+  .pulso-table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--brasa-line);
+    border-radius: 1.375rem;
+    background: var(--brasa-card);
+  }
+
+  .pulso-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+  }
+
+  .pulso-table thead th {
+    padding: 0.9rem 1rem;
+    background: var(--brasa-casca);
+    color: var(--brasa-muted);
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    vertical-align: bottom;
+  }
+
+  .pulso-table thead th span {
+    display: block;
+    letter-spacing: 0.02em;
+    text-transform: none;
+  }
+
+  .pulso-table td,
+  .pulso-table tbody th {
+    padding: 0.7rem 1rem;
+    border-top: 1px solid var(--brasa-line);
+  }
+
+  .pulso-table tbody th {
+    color: var(--brasa-ink);
+    font-weight: 500;
+  }
+
+  .pulso-table-num {
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    white-space: nowrap;
+  }
+
+  .pulso-input {
+    width: 100%;
+    min-height: 56px;
+    padding: 0 1.4rem;
+    border: 1px solid var(--brasa-line-strong);
+    border-radius: 999px;
+    background: var(--brasa-canvas);
+    color: var(--brasa-ink);
+    font-family: var(--font-mono);
+    font-size: 1rem;
+  }
+
+  .pulso-input::placeholder {
+    color: var(--brasa-muted);
+  }
+
+  .pulso-input:focus {
+    border-color: var(--brasa-ink);
+  }
+
+  @media (min-width: 640px) {
+    .pulso-button {
+      white-space: nowrap;
+    }
+  }
+
+  @media (min-width: 768px) {
+    :root {
+      --brasa-shell-x: 2rem;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .pulso-page-header {
+      border-radius: 1.5rem;
+    }
+
+    .pulso-page-header,
+    .pulso-panel {
+      box-shadow:
+        0 0 0 4px var(--brasa-casca),
+        0 0 0 5px var(--brasa-casca-linha),
+        var(--brasa-highlight),
+        var(--brasa-shadow);
+    }
+
+    .brasa-mode-toggle {
+      top: 0.75rem;
+      right: 0.75rem;
+    }
+
+    .brasa-mode-toggle button {
+      padding-inline: 0.55rem;
+      font-size: 0.625rem;
+    }
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-brasa-mode="claro"]) .brand-logo--light {
+    display: none;
+  }
+
+  :root:not([data-brasa-mode="claro"]) .brand-logo--dark {
+    display: block;
+  }
+}
+
+:root[data-brasa-mode="escuro"] .brand-logo--light {
+  display: none;
+}
+
+:root[data-brasa-mode="escuro"] .brand-logo--dark {
+  display: block;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

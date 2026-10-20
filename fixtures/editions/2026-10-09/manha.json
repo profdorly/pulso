@@ -1,0 +1,103 @@
+{
+  "id": "2026-10-09-manha",
+  "schemaVersion": 1,
+  "slot": "manha",
+  "calendarDate": "2026-10-09",
+  "timezone": "America/Sao_Paulo",
+  "capturedAt": "2026-10-09T10:34:00.000Z",
+  "status": "ok",
+  "kind": "regular",
+  "number": 91,
+  "predecessorId": null,
+  "revision": 1,
+  "supersedesCapturedAt": null,
+  "digest": {
+    "headline": "Laboratório lança modelo menor e agências testam regras de uso",
+    "lede": "Um laboratório publica um modelo compacto para uso local, e duas agências reguladoras abrem consulta sobre transparência.",
+    "bullets": [
+      {
+        "text": "Laboratório lança modelo pequeno para rodar sem internet",
+        "url": "https://lab.example.com/modelo-compacto",
+        "outlet": "Laboratório Exemplo"
+      },
+      {
+        "text": "Agência abre consulta pública sobre transparência",
+        "url": "https://noticias.example.org/consulta-transparencia",
+        "outlet": "Jornal Exemplo"
+      }
+    ]
+  },
+  "items": [
+    {
+      "id": "a892203eddcceeed7e03663f3a0e2fc0bb753c4eed2a65d94a19abd171c9a035",
+      "title": "Introducing Compact, a small model for local use",
+      "titlePt": "Laboratório apresenta o Compact, modelo pequeno para uso local",
+      "blurbPt": "O modelo roda em notebook e chega com licença aberta.",
+      "summaryPt": "O laboratório descreve o Compact como um modelo pequeno, pensado para rodar sem conexão em computadores comuns.\n\nA publicação lista os idiomas suportados e as limitações conhecidas.",
+      "url": "https://lab.example.com/modelo-compacto",
+      "outlet": "Laboratório Exemplo",
+      "region": "us",
+      "kind": "lab",
+      "genre": "news",
+      "publishedAt": "2026-10-09T08:10:00.000Z",
+      "publishedAtKind": "source",
+      "firstSeenAt": "2026-10-09T10:30:00.000Z"
+    },
+    {
+      "id": "34cf7081b6cb72bb96edab828d248e44fce6298edeed4993bb9cb1b7a5542bc4",
+      "title": "Agência abre consulta pública sobre transparência em sistemas de IA",
+      "blurbPt": "A consulta fica aberta por 60 dias.",
+      "url": "https://noticias.example.org/consulta-transparencia",
+      "outlet": "Jornal Exemplo",
+      "region": "brazil",
+      "kind": "press",
+      "genre": "news",
+      "publishedAt": "2026-10-09T09:00:00.000Z",
+      "publishedAtKind": "source",
+      "firstSeenAt": "2026-10-09T10:30:00.000Z"
+    }
+  ],
+  "sourceFailures": [],
+  "benchmarks": {
+    "capturedAt": "2026-10-05T11:00:00.000Z",
+    "previousCapturedAt": null,
+    "headline": [
+      {
+        "label": "Modelo Exemplo Alfa",
+        "value": "61.2",
+        "delta": null,
+        "metric": "Índice de inteligência"
+      },
+      {
+        "label": "Modelo Exemplo Beta",
+        "value": "58.9",
+        "delta": null,
+        "metric": "Índice de inteligência"
+      }
+    ],
+    "attribution": [
+      "Artificial Analysis"
+    ],
+    "rows": []
+  },
+  "models": {
+    "discovery": "gpt-5.6-terra",
+    "editorial": "gpt-6.1-sol",
+    "worker": "gpt-6-luna"
+  },
+  "costUsdApprox": 0.12,
+  "costBreakdown": [],
+  "gate": {
+    "checked": 0,
+    "bulletsDropped": 0,
+    "blurbsDropped": 0,
+    "headlineFellBack": false,
+    "unsupportedSamples": []
+  },
+  "cover": {
+    "path": "/editions/2026-10-09/manha.cover-r1.svg",
+    "alt": "PULSO · 09 OUT 2026: Laboratório lança modelo menor e agências testam regras de uso",
+    "width": 1200,
+    "height": 675
+  }
+}

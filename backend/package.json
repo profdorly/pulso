@@ -1,0 +1,41 @@
+{
+  "name": "pulso-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Pulso kitchen: the daily edition pipeline (feeds, models, checks) and the weekly audio pilot",
+  "scripts": {
+    "edition": "tsx src/edition/cli.ts",
+    "kitchen": "tsx src/kitchen/run.ts",
+    "kitchen:export": "tsx src/kitchen/export.ts",
+    "kitchen:import": "tsx src/kitchen/import.ts",
+    "kitchen:weekly": "tsx src/kitchen/weekly.ts",
+    "cover:fixtures": "tsx src/edition/cover/backfill.ts",
+    "build": "tsc -p tsconfig.json && printf '%s\\n' '{\"type\":\"module\"}' > dist/package.json",
+    "test": "vitest run --pool=forks",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint src --ext .ts"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1111.0",
+    "better-sqlite3": "^13.0.3",
+    "dotenv": "^16.4.7",
+    "openai": "^7.4.0",
+    "rss-parser": "^3.13.0",
+    "undici": "^8.9.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^26.2.0",
+    "eslint": "^10.8.1",
+    "tsx": "^4.23.12",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.67.0",
+    "vitest": "^4.1.10"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  }
+}
