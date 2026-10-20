@@ -25,6 +25,8 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           ARTIFICIAL_ANALYSIS_API_KEY: ${{ secrets.ARTIFICIAL_ANALYSIS_API_KEY }}
+          HEALTHCHECKS_URL: ${{ secrets.HEALTHCHECKS_URL }}
+          HEALTHCHECKS_MODELOS_URL: ${{ secrets.HEALTHCHECKS_MODELOS_URL }}
         run: |
           set -u
           falhas=0
@@ -47,4 +49,12 @@ jobs:
             '{"model":"gpt-6.1-sol","messages":[{"role":"user","content":"Responda ok."}],"max_completion_tokens":32}' "Authorization: Bearer ${OPENAI_API_KEY}"
           call "Artificial Analysis (catálogo de modelos)" https://artificialanalysis.ai/api/v2/language/models/free \
             "" "x-api-key: ${ARTIFICIAL_ANALYSIS_API_KEY}"
+          # Healthchecks: o endpoint /log só registra um evento, sem mudar o estado do check, e
+          # responde 404 a um link que não existe. Opcional: sem o segredo, não é testado.
+          for nome in HEALTHCHECKS_URL HEALTHCHECKS_MODELOS_URL; do
+            url="${!nome}"
+            if [ -z "$url" ]; then echo "--    $nome não configurado (opcional)"; continue; fi
+            code=$(curl -s -m 20 -o /dev/null -w "%{http_code}" --data "teste de configuração" "${url%/}/log")
+            if [ "$code" = "200" ]; then echo "ok    $nome (link válido; estado do check não mudou)"; else echo "FALHA $nome: HTTP $code"; falhas=$((falhas + 1)); fi
+          done
           [ "$falhas" -eq 0 ] && echo "todas as chaves funcionam" || exit 1
