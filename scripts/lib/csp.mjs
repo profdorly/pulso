@@ -16,9 +16,9 @@ const NOT_EXECUTED = new Set(["application/json", "application/ld+json"]);
 /** sha256 of every inline script the browser would execute, as CSP source expressions. */
 export function inlineScriptHashes(html) {
   const hashes = [];
-  // Case-insensitive, and tolerant of `</script >`: a script this misses would not be hashed, and
-  // the page would then fail closed (the script blocked), but the check must see every one.
-  for (const match of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)) {
+  // Case-insensitive, and ending where a browser ends the block (`</script` up to ">"): a script
+  // this misses would not be hashed and would fail closed (blocked), but the check must see all.
+  for (const match of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\b[^>]*>/gi)) {
     const attrs = match[1];
     if (/\bsrc=/.test(attrs)) continue;
     const type = /\btype="([^"]+)"/.exec(attrs)?.[1]?.toLowerCase();
