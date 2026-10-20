@@ -102,7 +102,7 @@ describe("runDaily", () => {
     expect(result).toMatchObject({ uploaded: true, publish: true, catalogue: "skipped", latestEditionId: "2026-10-21-manha", warnings: [] });
     expect(bucket.puts.map((put) => [put.Key, put.IfMatch])).toEqual([
       ["news.db", etag],
-      ["backups/news-2026-10-21.db", undefined],
+      ["backups/news-2026-10-21T103000Z.db", undefined],
     ]);
 
     // What was uploaded is a sound kitchen holding the new index, with no WAL left behind.
@@ -149,7 +149,7 @@ describe("runDaily", () => {
 
   it("keeps the run once the upload has committed, even if the dated copy fails", async () => {
     bucket.put("news.db", kitchenFile(dir, "2026-10-19T11:00:00.000Z"));
-    bucket.failPut.add("backups/news-2026-10-21.db");
+    bucket.failPut.add("backups/news-2026-10-21T103000Z.db");
     const result = await run(fakeJob([]));
     expect(result).toMatchObject({ uploaded: true, publish: true });
     expect(result.warnings).toEqual([expect.stringMatching(/cópia diária falhou/)]);

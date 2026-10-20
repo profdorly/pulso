@@ -3,6 +3,8 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
+  BACKUP_KEEP_DAYS,
+  BACKUP_LOCK_DAYS,
   backupState,
   downloadPrefix,
   downloadState,
@@ -101,21 +103,29 @@ describe("kitchen storage", () => {
     await expect(uploadState(target, local, { exists: true })).rejects.toThrow(/versão da cozinha desconhecida/);
   });
 
-  it("keeps one dated copy a day and prunes those older than the window", async () => {
+  it("only prunes copies the bucket lock has already released", () => {
+    expect(BACKUP_LOCK_DAYS).toBeLessThan(BACKUP_KEEP_DAYS);
+  });
+
+  it("names each copy for its upload and prunes those older than the window", async () => {
     const local = path.join(dir, "news.db");
     writeFileSync(local, "today");
-    for (const day of ["2026-09-01", "2026-09-18", "2026-09-19", "2026-10-18"]) bucket.put(`backups/news-${day}.db`, day);
+    // Old-style daily names and new per-upload names are pruned by the same date rule.
+    for (const name of ["2026-09-01", "2026-09-18T103000Z", "2026-09-19", "2026-10-18T103000Z"]) bucket.put(`backups/news-${name}.db`, name);
     bucket.put("backups/notes.txt", "not a copy");
 
     const now = new Date("2026-10-19T10:30:00Z");
-    expect(await backupState(target, local, now)).toBe("backups/news-2026-10-19.db");
+    expect(await backupState(target, local, now)).toBe("backups/news-2026-10-19T103000Z.db");
+    // A second upload the same day gets its own copy instead of replacing the first.
+    expect(await backupState(target, local, new Date("2026-10-19T12:40:05Z"))).toBe("backups/news-2026-10-19T124005Z.db");
     const removed = await pruneBackups(target, now, 30);
 
-    expect(removed).toEqual(["backups/news-2026-09-01.db", "backups/news-2026-09-18.db"]);
+    expect(removed).toEqual(["backups/news-2026-09-01.db", "backups/news-2026-09-18T103000Z.db"]);
     expect([...bucket.objects.keys()].filter((key) => key.startsWith("backups/")).sort()).toEqual([
       "backups/news-2026-09-19.db",
-      "backups/news-2026-10-18.db",
-      "backups/news-2026-10-19.db",
+      "backups/news-2026-10-18T103000Z.db",
+      "backups/news-2026-10-19T103000Z.db",
+      "backups/news-2026-10-19T124005Z.db",
       "backups/notes.txt",
     ]);
   });

@@ -46,8 +46,14 @@ export const DEFAULT_KEY = "news.db";
 export const BACKUP_PREFIX = "backups/";
 /** The weekly audio's published files: too heavy for the kitchen file, so they sit beside it. */
 export const WEEKLY_PREFIX = "weekly/";
-/** Daily copies kept. A bad run is caught within days, not a month. */
+/** Copies kept. A bad run is caught within days, not a month. */
 export const BACKUP_KEEP_DAYS = 30;
+/**
+ * The bucket's lock rule keeps every object under `backups/` from being deleted or overwritten
+ * for this long — even by the kitchen's own key, so a leaked key cannot erase the history. It is
+ * shorter than BACKUP_KEEP_DAYS, so pruning only ever deletes copies the lock has released.
+ */
+export const BACKUP_LOCK_DAYS = 25;
 
 /**
  * The target from the environment, or null when it is not configured.
@@ -160,13 +166,15 @@ export async function uploadState(target: StateTarget, localPath: string, revisi
   }
 }
 
-function backupKey(target: StateTarget, day: string): string {
-  return `${target.backupPrefix}news-${day}.db`;
+/** `backups/news-2026-10-21T103106Z.db`: one name per upload, so no copy is ever overwritten. */
+function backupKey(target: StateTarget, now: Date): string {
+  const iso = now.toISOString();
+  return `${target.backupPrefix}news-${iso.slice(0, 10)}T${iso.slice(11, 19).replaceAll(":", "")}Z.db`;
 }
 
-/** Keeps a dated copy of the kitchen just uploaded. The same day overwrites its own copy. */
+/** Keeps a copy of the kitchen just uploaded, named for the moment of the upload. */
 export async function backupState(target: StateTarget, localPath: string, now = new Date()): Promise<string> {
-  const key = backupKey(target, now.toISOString().slice(0, 10));
+  const key = backupKey(target, now);
   await target.client.send(
     new PutObjectCommand({ Bucket: target.bucket, Key: key, Body: readFileSync(localPath), ContentType: "application/vnd.sqlite3" })
   );
@@ -190,7 +198,7 @@ async function listKeys(target: StateTarget, prefix: string): Promise<string[]> 
 export async function pruneBackups(target: StateTarget, now = new Date(), keepDays = BACKUP_KEEP_DAYS): Promise<string[]> {
   const cutoff = new Date(now.getTime() - keepDays * 86_400_000).toISOString().slice(0, 10);
   const stale = (await listKeys(target, target.backupPrefix)).filter((key) => {
-    const day = /news-(\d{4}-\d{2}-\d{2})\.db$/.exec(key)?.[1];
+    const day = /news-(\d{4}-\d{2}-\d{2})(?:T\d{6}Z)?\.db$/.exec(key)?.[1];
     return day !== undefined && day < cutoff;
   });
   for (const key of stale) {
