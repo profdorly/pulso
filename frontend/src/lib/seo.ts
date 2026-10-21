@@ -111,7 +111,9 @@ function publisher() {
  * NewsArticle for an edition.
  *
  * The cited sources go in `citation` so the structured data reflects what the edition
- * actually is: curation over other outlets, not original reporting.
+ * actually is: curation over other outlets, not original reporting. Each citation is the URL
+ * alone: the headline and the outlet are already on the page, the edition is noindex (no rich
+ * result to feed), and repeating fifty titles and outlets cost about 2 kB gzip on a full day.
  */
 export function editionJsonLd(edition: PulsoEdition, canonical: string): Record<string, unknown> {
   const { image } = coverImage(edition);
@@ -132,12 +134,7 @@ export function editionJsonLd(edition: PulsoEdition, canonical: string): Record<
       url: absoluteUrl(""),
     },
     mainEntityOfPage: { "@type": "WebPage", "@id": canonical },
-    citation: edition.items.map((item) => ({
-      "@type": "CreativeWork",
-      name: item.title,
-      url: item.url,
-      ...(item.outlet ? { publisher: { "@type": "Organization", name: item.outlet } } : {}),
-    })),
+    citation: edition.items.map((item) => ({ "@type": "CreativeWork", url: item.url })),
   };
 }
 

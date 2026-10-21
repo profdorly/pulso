@@ -5,6 +5,7 @@ import { itemAnchor, itemShareText, summaryParagraphs } from "../../lib/itemPage
 import { trackEvent } from "../../lib/analytics.js";
 import { absoluteUrl } from "../../lib/seo.js";
 import { externalHref } from "../../lib/safeUrl.js";
+import { whatsappShareUrl } from "../../lib/shareUrl.js";
 
 /**
  * One section of an edition's items.
@@ -42,7 +43,7 @@ export function CompactItems({
         {items.map((item) => {
           const anchor = itemAnchor(item);
           const shareUrl = `${absoluteUrl(editionPath(edition.calendarDate, edition.slot))}#${anchor}`;
-          const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(itemShareText(item, shareUrl))}`;
+          const whatsappUrl = whatsappShareUrl(itemShareText(item, shareUrl));
           const paragraphs = summaryParagraphs(item);
 
           return (

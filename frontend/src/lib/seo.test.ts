@@ -204,8 +204,9 @@ describe("page metadata", () => {
     expect(jsonLd["@type"]).toBe("NewsArticle");
     expect(jsonLd.datePublished).toBe(edition.capturedAt);
     expect(jsonLd.inLanguage).toBe("pt-BR");
-    const citations = jsonLd.citation as Array<{ url: string }>;
+    const citations = jsonLd.citation as Array<{ url: string; name?: string }>;
     expect(citations.map((row) => row.url)).toEqual(["https://pandaily.com/glm-5-3"]);
+    expect(citations.every((row) => row.name === undefined)).toBe(true);
   });
 
   it("keeps the error page and every edition page out of the index", () => {

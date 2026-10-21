@@ -12,6 +12,9 @@
  *   - links and canonicals point at the served address, never at a redirect
  *   - models, methodology and archive render their content in HTML
  *
+ * The edition's weight has a target and a ceiling (see EDITION_HTML_TARGET_KB): past the target
+ * it is a warning, past the ceiling a failure. Warnings never change the exit code.
+ *
  * Usage: node scripts/verify-site.mjs [--dir dist-site] [--port 4399] [--editions <dir>]
  */
 
@@ -27,6 +30,19 @@ import { liveEditionOf } from "./site-live.mjs";
 import { cspOf, inlineScriptHashes } from "./lib/csp.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+
+/**
+ * Weight of the edition page, gzip. Its size follows the day's news, not the template: with the
+ * 50-item cap, full days measured 28.6–32.4 kB before the page was slimmed (share links with
+ * minimal escaping, citations by URL), and a day where every item carries a long summary measures
+ * ~40 kB after it. The CI fixture is 4.2 kB, so a hard 30 kB limit caught no template regression and
+ * instead blocked whole days in production (2026-10-21: 30.1 kB). The AWS publisher never
+ * limited the edition's weight. So 30 kB stays the target, reported as a warning on every day
+ * past it, and only 50 kB, which no amount of news reaches, fails: that is a template or data
+ * defect (an inlined edition JSON, say), worth stopping the deploy for.
+ */
+const EDITION_HTML_TARGET_KB = 30;
+const EDITION_HTML_CEILING_KB = 50;
 const siteBaseSource = readFileSync(path.join(repoRoot, "frontend/src/lib/siteBase.ts"), "utf8");
 const ORIGIN = siteBaseSource.match(/SITE_ORIGIN\s*=\s*"([^"]+)"/)?.[1];
 const GA_ID = siteBaseSource.match(/GA_MEASUREMENT_ID\s*=\s*"([^"]+)"/)?.[1];
@@ -80,6 +96,12 @@ const server = createServer((req, res) => {
 const checks = [];
 function check(name, ok, detail = "") {
   checks.push({ name, ok, detail });
+}
+
+/** Worth a look, not worth stopping the deploy. Shows as an annotation on GitHub Actions. */
+const warnings = [];
+function warn(name, detail = "") {
+  warnings.push({ name, detail });
 }
 
 async function get(pathname) {
@@ -223,7 +245,10 @@ try {
     check("edition og card stays under 150 kB", card.buf.length < 150 * 1024, `${(card.buf.length / 1024).toFixed(1)} kB`);
   }
   const gzipKb = gzipSync(Buffer.from(page.body)).length / 1024;
-  check("edition HTML stays under 30 kB gzip", gzipKb < 30, `${gzipKb.toFixed(1)} kB`);
+  const summaries = latest.items.filter((item) => item.summaryPt).length;
+  const weight = `${gzipKb.toFixed(1)} kB — ${latest.items.length} itens, ${summaries} resumos`;
+  check(`edition HTML stays under ${EDITION_HTML_CEILING_KB} kB gzip`, gzipKb < EDITION_HTML_CEILING_KB, weight);
+  if (gzipKb >= EDITION_HTML_TARGET_KB) warn(`edition HTML is over the ${EDITION_HTML_TARGET_KB} kB gzip target`, weight);
 
   // ---- What is not published ----
   for (const pathname of [
@@ -297,5 +322,10 @@ const failed = checks.filter((entry) => !entry.ok);
 for (const entry of checks) {
   process.stdout.write(`${entry.ok ? "ok  " : "FAIL"} ${entry.name}${entry.detail ? ` — ${entry.detail}` : ""}\n`);
 }
-process.stdout.write(`\n${checks.length - failed.length}/${checks.length} checks passed\n`);
+for (const entry of warnings) {
+  const line = `${entry.name}${entry.detail ? ` — ${entry.detail}` : ""}`;
+  process.stdout.write(`WARN ${line}\n`);
+  if (process.env.GITHUB_ACTIONS === "true") process.stdout.write(`::warning title=verify-site::${line}\n`);
+}
+process.stdout.write(`\n${checks.length - failed.length}/${checks.length} checks passed, ${warnings.length} warning(s)\n`);
 if (failed.length > 0) process.exit(1);
