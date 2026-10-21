@@ -10,7 +10,7 @@ Tudo roda no GitHub Actions (`.github/workflows/publicar.yml`). A cozinha — o 
 
 O upload é o ponto sem volta. A cópia datada e a limpeza das antigas vêm depois e, se falham, viram aviso na corrida em vez de derrubá-la — derrubar ali deixaria uma edição gravada sem chegar ao site.
 
-O GitHub atrasa e às vezes descarta execuções agendadas em horário de pico, então há uma segunda corrida às 09:40. Ela baixa a cozinha, vê que a edição do dia existe, confere se o site no ar a mostra (o home leva um `<meta name="pulso:edition">`) e só republica se não mostrar. As execuções entram numa fila (`concurrency.queue: max`): nenhuma cancela outra.
+O `schedule` do GitHub atrasa horas e às vezes descarta execuções, então quem dispara é um Worker da Cloudflare (`infra/disparador`), às 07:32, às 09:05 e às 17:15, com os crons do GitHub de reserva às 07:27 e às 17:10. Uma corrida depois da primeira baixa a cozinha, vê que a edição do dia existe, confere se o site no ar a mostra (o home leva um `<meta name="pulso:edition">`) e só republica se não mostrar; se a edição não saiu, ela a gera. A corrida da tarde é a herdeira do `pulso-site-tarde` da AWS: uma manhã que falhou é retomada no mesmo dia. As execuções entram numa fila (`concurrency.queue: max`): nenhuma cancela outra.
 
 O monitor externo recebe sucesso só no fim, quando o site no ar mostra a edição; falha em qualquer etapa — cozinha, montagem, verificação, deploy — chega como falha.
 ### Como os itens são escolhidos
@@ -157,7 +157,7 @@ Cada rota sai como HTML estático com metadados próprios: título, descrição,
 
 O job `site` do CI (`.github/workflows/ci.yml`) monta o site a partir das edições sintéticas de `fixtures/editions` e roda:
 
-- `npm run verify:site`: sobe o site local e confere cada rota, metadado, feed e regra de indexação.
+- `npm run verify:site`: sobe o site local e confere cada rota, metadado, feed e regra de indexação. O peso da página da edição tem meta de 30 kB gzip, que só gera aviso, e teto de 50 kB, que reprova: o peso segue o noticiário do dia (um dia cheio, com resumos em todos os itens, chega a ~40 kB), a fixture tem 4 kB e não pegaria regressão nenhuma, e travar a edição do dia por 0,1 kB, como em 21/10, é pior que uma página um pouco mais pesada. Só um defeito de template ou de dados passa de 50 kB.
 - `npm run budget:bundle`: o JavaScript do Pulso da Semana dentro do orçamento de `budgets.json`, medido pelo grafo de importação estática.
 - `npm run a11y`: axe-core sobre jsdom nas rotas servidas, reprovando em `serious`/`critical`. Imprime em toda corrida as regras que **não** puderam rodar: contraste de cor exige layout, e jsdom não renderiza.
 

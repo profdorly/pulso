@@ -6,7 +6,7 @@ Jornal diário de inteligência artificial em português, montado por um program
 
 ## O que ele faz
 
-Todo dia às 07:30 (Brasília):
+Todo dia por volta das 07:30 (Brasília):
 
 1. **Lê** 27 feeds de laboratórios e imprensa e busca na web o que eles não trouxeram.
 2. **Escolhe** até 50 itens com cota por região e por veículo, para que a capa não seja só do país que publica mais.
@@ -20,8 +20,8 @@ O porquê de cada regra está em [docs/como-funciona.md](docs/como-funciona.md);
 ## Como roda
 
 ```
-            GitHub Actions (publicar.yml)
-  07:30 ┌──────────────┐   ┌──────────────┐   ┌──────────────┐
+   Worker da Cloudflare (cron) → GitHub Actions (publicar.yml)
+  07:32 ┌──────────────┐   ┌──────────────┐   ┌──────────────┐
  ──────▶│   cozinha    │──▶│     site     │──▶│    deploy    │──▶ GitHub Pages
         │ npm run      │   │ kitchen:     │   │ deploy-pages │    pulso.dorly.com.br
         │ kitchen      │   │ export +     │   └──────────────┘
@@ -37,8 +37,8 @@ O porquê de cada regra está em [docs/como-funciona.md](docs/como-funciona.md);
 
 - **Cozinha** (`backend/`): TypeScript, SQLite (`better-sqlite3`), OpenAI Responses API. O estado inteiro é um arquivo, baixado e devolvido com escrita condicional: duas corridas nunca se sobrescrevem, e uma corrida que falha não muda nada.
 - **Site** (`frontend/`, `scripts/`): React pré-renderizado em HTML estático. Sem JavaScript nas páginas, exceto o player do Pulso da Semana e o Google Analytics.
-- **Duas corridas por dia**: a das 07:30 faz o trabalho; a das 09:40 refaz só o que faltou (a edição, se não saiu; o site, se não mostra a edição) e de resto não gasta nada.
-- **Monitoramento**: o [Healthchecks.io](https://healthchecks.io/) recebe sucesso só quando o site **no ar** mostra a edição do dia, conferido depois do deploy. Sem ping em um dia, ele avisa — o que cobre corrida que falhou, deploy que falhou e agendamento que o GitHub descartou. Um segundo monitor, opcional, cobre o catálogo semanal. A própria corrida reativa o agendamento, que o GitHub desligaria após 60 dias sem commit.
+- **Até cinco corridas por dia**: um Worker da Cloudflare, de graça e sem rota ([infra/disparador](infra/disparador/README.md)), dispara `publicar.yml` às 07:32, às 09:05 e às 17:15; o cron do próprio GitHub, que atrasa horas ou falha, fica de reserva às 07:27 e às 17:10. A primeira que chega faz o trabalho; as outras refazem só o que faltou (a edição, se não saiu; o site, se não mostra a edição) e de resto não gastam nada. As da tarde retomam no mesmo dia uma manhã que falhou, como fazia o `pulso-site-tarde` da AWS.
+- **Monitoramento**: o [Healthchecks.io](https://healthchecks.io/) recebe sucesso só quando o site **no ar** mostra a edição do dia, conferido depois do deploy. Sem ping em um dia, ele avisa — o que cobre corrida que falhou, deploy que falhou e agendamento que o GitHub descartou. Um segundo monitor, opcional, cobre o catálogo semanal. A própria corrida reativa o agendamento, que o GitHub desligaria após 60 dias sem commit, e o Worker religa um workflow que o GitHub já tenha desligado por isso. Configure o check da edição no modo **Cron**, expressão `30 10 * * *`, fuso UTC, tolerância de 4 h (no modo de período, um ping das 17:15 empurraria o próximo alerta para o dia seguinte à noite), com notificação por e-mail ou Telegram; e, no GitHub (Settings → Notifications → Actions), e-mail só para execuções que falham. Validade dos tokens: [infra/disparador](infra/disparador/README.md#datas-de-troca).
 
 ## Rodar local
 
@@ -74,7 +74,7 @@ npm run build:site && npm run verify:site && npm run budget:bundle && npm run a1
 ## Publicar o seu
 
 1. Crie um bucket R2 e dois tokens restritos a ele: um de leitura e escrita (a cozinha) e um só de leitura (o site).
-2. No repositório, crie o ambiente `production` (Settings → Environments), com **Deployment branches** restrito a `main` — é isso que impede código de outro branch de ler os segredos. Segredos: `OPENAI_API_KEY`, `ARTIFICIAL_ANALYSIS_API_KEY`, `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID` e `R2_SECRET_ACCESS_KEY` (o token de escrita), `R2_READ_ACCESS_KEY_ID` e `R2_READ_SECRET_ACCESS_KEY` (o de leitura). Opcionais: `HEALTHCHECKS_URL` (período de 1 dia, tolerância de 4 h) e `HEALTHCHECKS_MODELOS_URL` (7 dias, tolerância de 2 dias). Variáveis opcionais: `PULSO_WEB_SEARCH=shadow` e `PULSO_MAX_EDITION_USD`.
+2. No repositório, crie o ambiente `production` (Settings → Environments), com **Deployment branches** restrito a `main` — é isso que impede código de outro branch de ler os segredos. Segredos: `OPENAI_API_KEY`, `ARTIFICIAL_ANALYSIS_API_KEY`, `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID` e `R2_SECRET_ACCESS_KEY` (o token de escrita), `R2_READ_ACCESS_KEY_ID` e `R2_READ_SECRET_ACCESS_KEY` (o de leitura). Opcionais: `HEALTHCHECKS_URL` (modo Cron, `30 10 * * *` UTC, tolerância de 4 h) e `HEALTHCHECKS_MODELOS_URL` (7 dias, tolerância de 2 dias). Depois de criar os segredos, rode o workflow **Testar chaves**. Variáveis opcionais: `PULSO_WEB_SEARCH=shadow` e `PULSO_MAX_EDITION_USD`.
 3. Em Settings → Pages, escolha **GitHub Actions** como fonte.
 4. Troque a identidade do jornal (nome, domínio, logo, Analytics): a lista está em [TRADEMARKS.md](TRADEMARKS.md).
 5. Crie a variável de repositório `PULSO_PUBLICAR` com valor `true` (Settings → Secrets and variables → Actions → Variables). Sem ela, o workflow de publicação não roda nada — é o que deixa um fork inerte.
