@@ -1,0 +1,19 @@
+// Disparador do Pulso: um Worker sem rota que, duas vezes por dia, pede ao GitHub para rodar o
+// workflow publicar.yml (tarefa=edicao). Ver README.md nesta pasta.
+{
+  "$schema": "https://unpkg.com/wrangler@4.151.3/config-schema.json",
+  "name": "pulso-disparador",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-21",
+  // Sem endereço público: nem *.workers.dev, nem rota, nem domínio. O Worker só acorda pelo cron e
+  // não encosta na zona dorly.com.br.
+  "workers_dev": false,
+  "preview_urls": false,
+  // Horários em UTC: 07:32 e 09:05 em Brasília.
+  "triggers": {
+    "crons": ["32 10 * * *", "5 12 * * *"]
+  },
+  "observability": {
+    "enabled": true
+  }
+}
