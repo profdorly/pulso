@@ -1,4 +1,4 @@
-// Disparador do Pulso: um Worker sem rota que, duas vezes por dia, pede ao GitHub para rodar o
+// Disparador do Pulso: um Worker sem rota que, três vezes por dia, pede ao GitHub para rodar o
 // workflow publicar.yml (tarefa=edicao). Ver README.md nesta pasta.
 {
   "$schema": "https://unpkg.com/wrangler@4.151.3/config-schema.json",
@@ -9,9 +9,10 @@
   // não encosta na zona dorly.com.br.
   "workers_dev": false,
   "preview_urls": false,
-  // Horários em UTC: 07:32 e 09:05 em Brasília.
+  // Horários em UTC: 07:32, 09:05 e 17:15 em Brasília (3 dos 5 crons do plano Free). O das 17:15
+  // é o `pulso-site-tarde` da AWS: retoma o dia se as corridas da manhã falharam.
   "triggers": {
-    "crons": ["32 10 * * *", "5 12 * * *"]
+    "crons": ["32 10 * * *", "5 12 * * *", "15 20 * * *"]
   },
   "observability": {
     "enabled": true

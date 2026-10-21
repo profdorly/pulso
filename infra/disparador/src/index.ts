@@ -1,6 +1,8 @@
 // Pede ao GitHub uma execução de publicar.yml com tarefa=edicao. Não decide nada: a cozinha é que
-// sabe se a edição de hoje já saiu (slot-already-published) e, nesse caso, não faz nada. Por isso
-// os dois horários do cron e o cron de reserva do próprio GitHub podem disparar sem medo.
+// sabe se a edição de hoje já saiu (slot-already-published) e, nesse caso, só confere se o site no
+// ar a mostra e republica se preciso. Por isso os três horários do cron e o cron de reserva do
+// próprio GitHub podem disparar sem medo. O das 17:15 de Brasília é o herdeiro do `pulso-site-tarde`
+// da AWS: um dia em que as corridas da manhã falharam é retomado à tarde, não no dia seguinte.
 
 interface Env {
   GITHUB_TOKEN: string;
@@ -12,13 +14,45 @@ interface ScheduledController {
   readonly scheduledTime: number;
 }
 
-const DISPATCH_URL =
-  "https://api.github.com/repos/profdorly/pulso/actions/workflows/publicar.yml/dispatches";
+const WORKFLOW_URL = "https://api.github.com/repos/profdorly/pulso/actions/workflows/publicar.yml";
+const DISPATCH_URL = `${WORKFLOW_URL}/dispatches`;
 const ATTEMPTS = 3;
 const BACKOFF_MS = [0, 5_000, 20_000];
 const TIMEOUT_MS = 15_000;
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+function headers(env: Env): Record<string, string> {
+  return {
+    Authorization: `Bearer ${env.GITHUB_TOKEN}`,
+    Accept: "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+    "User-Agent": "pulso-disparador",
+  };
+}
+
+// O GitHub desliga o workflow de um repositório público após 60 dias sem atividade
+// (`disabled_inactivity`), e aí o dispatch também falha. O passo "Manter o agendamento ativo" do
+// próprio workflow só roda se uma execução rodar, então quem religa é o Worker. Um workflow
+// desligado à mão (`disabled_manually`) continua desligado. Qualquer erro aqui só vai para o log:
+// o dispatch logo abaixo é que diz se deu certo.
+async function ensureActive(env: Env): Promise<void> {
+  try {
+    const res = await fetch(WORKFLOW_URL, { headers: headers(env), signal: AbortSignal.timeout(TIMEOUT_MS) });
+    if (!res.ok) throw new Error(`HTTP ${res.status} ao ler o estado do workflow`);
+    const { state } = (await res.json()) as { state?: string };
+    if (state !== "disabled_inactivity") return;
+    const enable = await fetch(`${WORKFLOW_URL}/enable`, {
+      method: "PUT",
+      headers: headers(env),
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+    if (!enable.ok) throw new Error(`HTTP ${enable.status} ao religar o workflow`);
+    console.log("publicar.yml estava desligado por inatividade e foi religado");
+  } catch (err) {
+    console.error(`não deu para conferir se publicar.yml está ligado: ${err instanceof Error ? err.message : String(err)}`);
+  }
+}
 
 async function dispatch(env: Env, cron: string): Promise<void> {
   if (!env.GITHUB_TOKEN) throw new Error("GITHUB_TOKEN ausente: rode `wrangler secret put GITHUB_TOKEN`");
@@ -29,17 +63,13 @@ async function dispatch(env: Env, cron: string): Promise<void> {
     try {
       const res = await fetch(DISPATCH_URL, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${env.GITHUB_TOKEN}`,
-          Accept: "application/vnd.github+json",
-          "X-GitHub-Api-Version": "2022-11-28",
-          "User-Agent": "pulso-disparador",
-          "Content-Type": "application/json",
-        },
+        headers: { ...headers(env), "Content-Type": "application/json" },
         body: JSON.stringify({ ref: "main", inputs: { tarefa: "edicao" } }),
         signal: AbortSignal.timeout(TIMEOUT_MS),
       });
-      if (res.status === 204) {
+      // 204 é a resposta clássica; com `return_run_details` (e, segundo relatos, às vezes sem
+      // pedir) o GitHub responde 200. Os dois querem dizer que a execução foi criada.
+      if (res.ok) {
         console.log(`publicar.yml disparado (cron "${cron}", tentativa ${attempt})`);
         return;
       }
@@ -60,6 +90,7 @@ export default {
   // Esperamos o disparo aqui mesmo, sem ctx.waitUntil: assim uma falha final faz a invocação
   // terminar em erro nos logs da Cloudflare. A espera da rede não conta no limite de CPU.
   async scheduled(controller: ScheduledController, env: Env): Promise<void> {
+    if (env.GITHUB_TOKEN) await ensureActive(env);
     await dispatch(env, controller.cron);
   },
 };

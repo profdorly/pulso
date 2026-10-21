@@ -8,10 +8,12 @@
 # devolvida com escrita condicional: uma execução que perde a corrida falha em vez de apagar a
 # outra, e uma que falha não muda nada.
 #
-# Até três corridas por dia: o cron de reserva das 07:27 e os disparos do Worker (infra/disparador)
-# às 07:32 e às 09:05. A primeira que chega faz o trabalho; as outras só refazem o que ela não
-# terminou — a edição, se não saiu; o site, se não mostra a edição — e de resto não fazem nada.
-# O GitHub atrasa e às vezes descarta execuções agendadas; o Worker não depende desse agendador.
+# Até cinco corridas por dia: os crons de reserva do GitHub às 07:27 e às 17:10 e os disparos do
+# Worker (infra/disparador) às 07:32, 09:05 e 17:15. A primeira que chega faz o trabalho; as outras
+# só refazem o que ela não terminou — a edição, se não saiu; o site, se não mostra a edição — e de
+# resto não fazem nada. As da tarde fazem o papel do `pulso-site-tarde` da AWS: um dia em que a
+# manhã falhou é retomado no mesmo dia. O GitHub atrasa e às vezes descarta execuções agendadas;
+# o Worker não depende desse agendador.
 #
 # Ambiente `production` (Settings → Environments), restrito ao branch main:
 #   segredos  OPENAI_API_KEY, ARTIFICIAL_ANALYSIS_API_KEY, R2_ACCOUNT_ID,
@@ -26,11 +28,12 @@
 name: Publicar
 
 on:
-  # Quem dispara de fato é o Worker da Cloudflare (infra/disparador), às 07:32 e às 09:05, com
-  # tarefa=edicao. Este cron é só reserva, de graça: se ele e o Worker rodarem no mesmo dia, a
-  # cozinha vê que a edição já saiu e não faz nada.
+  # Quem dispara de fato é o Worker da Cloudflare (infra/disparador), às 07:32, 09:05 e 17:15,
+  # com tarefa=edicao. Estes crons são só reserva, de graça: se eles e o Worker rodarem no mesmo
+  # dia, a cozinha vê que a edição já saiu e só confere o site no ar.
   schedule:
     - cron: "27 10 * * *" # 07:27 em Brasília
+    - cron: "10 20 * * *" # 17:10 em Brasília, reserva do disparo das 17:15
   push:
     branches: [main]
   workflow_dispatch:
