@@ -6,17 +6,24 @@ const { mockParseURL } = vi.hoisted(() => ({
   mockParseURL: vi.fn(),
 }));
 
+// The fetcher downloads with `fetch` and parses with `parseString`. The stubbed `fetch` answers
+// with the URL as the body, so `mockParseURL` keeps receiving the feed URL and each test can still
+// script what a given feed "contains".
 vi.mock("rss-parser", () => ({
   default: class MockParser {
-    parseURL = mockParseURL;
+    parseString = mockParseURL;
   },
 }));
+
+const mockFetch = vi.fn((url: string) => Promise.resolve(new Response(url, { status: 200 })));
+vi.stubGlobal("fetch", mockFetch);
 
 import {
   DEFAULT_MAX_ITEMS,
   RSS_USER_AGENT,
   fetchRssSource,
   fetchRssSources,
+  repairBareAmpersands,
 } from "./rss.js";
 
 const fetchedNow = "2026-08-14T12:00:00.000Z";
@@ -259,6 +266,45 @@ describe("fetchRssSource", () => {
     expect(result.sourceId).toBe("feed-a");
     expect(result.items).toEqual([]);
     expect(result.error).toBe("ECONNRESET");
+  });
+
+  it("reports an HTTP error status without parsing", async () => {
+    mockFetch.mockResolvedValueOnce(new Response("gone", { status: 404 }));
+    const result = await fetchRssSource(sourceA);
+    expect(result.items).toEqual([]);
+    expect(result.error).toBe("Status code 404");
+    expect(mockParseURL).not.toHaveBeenCalled();
+  });
+
+  it("retries a rejected feed once with bare ampersands escaped", async () => {
+    const bad = '<rss><item><media:content url="https://x.example/a.jpg?w=1&dpr=2"/></item></rss>';
+    mockFetch.mockResolvedValueOnce(new Response(bad, { status: 200 }));
+    mockParseURL.mockImplementation((xml: string) => {
+      if (/&(?!amp;)/.test(xml)) return Promise.reject(new Error("Invalid character in entity name"));
+      return Promise.resolve({
+        items: [{ title: "Ok", link: "https://x.example/a", isoDate: "2026-08-13T16:00:00.000Z" }],
+      });
+    });
+
+    const result = await fetchRssSource(sourceA);
+    expect(result.error).toBeUndefined();
+    expect(result.items).toHaveLength(1);
+    expect(mockParseURL).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("repairBareAmpersands", () => {
+  it("escapes bare ampersands and leaves entities and CDATA alone", () => {
+    const xml =
+      '<a u="?w=1&dpr=2">AT&amp;T &#38; &#x26; &lt;</a><![CDATA[Tom & Jerry &dpr=2]]><b>R&D</b>';
+    expect(repairBareAmpersands(xml)).toBe(
+      '<a u="?w=1&amp;dpr=2">AT&amp;T &#38; &#x26; &lt;</a><![CDATA[Tom & Jerry &dpr=2]]><b>R&amp;D</b>'
+    );
+  });
+
+  it("returns a valid document unchanged", () => {
+    const xml = "<rss><title>A &amp; B</title></rss>";
+    expect(repairBareAmpersands(xml)).toBe(xml);
   });
 });
 

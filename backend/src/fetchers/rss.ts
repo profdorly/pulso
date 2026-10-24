@@ -28,6 +28,57 @@ function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
 }
 
+const FEED_ACCEPT = "application/rss+xml, application/atom+xml, application/xml, text/xml";
+
+/**
+ * Escapes ampersands that do not start an entity, outside CDATA sections.
+ *
+ * Rest of World ships image URLs like `?width=380&dpr=2` raw in attributes, which a strict XML
+ * parser rejects ("Invalid character in entity name") — losing the whole feed every day. CDATA is
+ * left alone: a `&` there is already literal text, and escaping it would change what readers see.
+ */
+export function repairBareAmpersands(xml: string): string {
+  return xml
+    .split(/(<!\[CDATA\[[\s\S]*?\]\]>)/)
+    .map((part, i) =>
+      i % 2 === 1 ? part : part.replace(/&(?!(?:[A-Za-z][A-Za-z0-9]*|#[0-9]+|#x[0-9A-Fa-f]+);)/g, "&amp;")
+    )
+    .join("");
+}
+
+/**
+ * Downloads the feed with `fetch` instead of `rss-parser`'s `parseURL`.
+ *
+ * `parseURL` follows a redirect without consuming the redirect's own response, so its socket
+ * stays open until the server drops it. Six of our feeds redirect (Guardian, blog.google, Mistral,
+ * The Register, SCMP, Sixth Tone), and that kept the kitchen alive for 5 to 10 idle minutes after
+ * it had finished, on every run. `fetch` follows redirects itself, and the abort signal bounds the
+ * body too, not only the headers.
+ */
+async function downloadFeed(url: string, timeoutMs: number): Promise<string> {
+  const response = await fetch(url, {
+    headers: { "User-Agent": RSS_USER_AGENT, Accept: FEED_ACCEPT },
+    redirect: "follow",
+    signal: AbortSignal.timeout(timeoutMs),
+  });
+  if (!response.ok) {
+    await response.body?.cancel();
+    throw new Error(`Status code ${response.status}`);
+  }
+  return response.text();
+}
+
+async function parseFeed(parser: Parser, xml: string) {
+  try {
+    return await parser.parseString(xml);
+  } catch (err) {
+    // Only a feed the strict parser rejected pays for the repair; a valid one is read as is.
+    const repaired = repairBareAmpersands(xml);
+    if (repaired === xml) throw err;
+    return parser.parseString(repaired);
+  }
+}
+
 export async function fetchRssSource(
   source: Source,
   options?: { maxItems?: number; timeoutMs?: number }
@@ -45,15 +96,8 @@ export async function fetchRssSource(
   const fetchedAt = new Date().toISOString();
 
   try {
-    const parser = new Parser({
-      timeout: timeoutMs,
-      headers: {
-        "User-Agent": RSS_USER_AGENT,
-        Accept: "application/rss+xml, application/atom+xml, application/xml, text/xml",
-      },
-    });
-
-    const feed = await parser.parseURL(source.feedUrl);
+    const parser = new Parser();
+    const feed = await parseFeed(parser, await downloadFeed(source.feedUrl, timeoutMs));
     const entries = (feed.items ?? []).slice(0, maxItems);
     const items: NewsItem[] = [];
     let skipped = 0;
