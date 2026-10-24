@@ -364,41 +364,48 @@ export function quietDigest(checked: number, rejected: number): PulsoEdition["di
 export async function runEdition(input: RunEditionInput): Promise<EditionJobResult> {
   const now = input.now ?? new Date();
   const store = createEditionStore(input.editionsDir);
+  // Out here, not inside the locked run: a run that throws after the models answered has still
+  // spent that money, and used to report it as zero.
+  const ledger = createCostLedger();
+  const withCost = (result: EditionJobResult): EditionJobResult => ({
+    ...result,
+    costUsdApprox: ledger.totalUsd(),
+    costBreakdown: costBreakdownFor(ledger),
+  });
 
   try {
-    return await withEditionLock(input.lockPath, () =>
-      runEditionLocked({ ...input, now, store })
+    return withCost(
+      await withEditionLock(input.lockPath, () => runEditionLocked({ ...input, now, store, ledger }))
     );
   } catch (error) {
     if (error instanceof EditionLockError) {
-      return {
+      return withCost({
         status: "error",
         editionId: null,
         newItemCount: 0,
         costUsdApprox: 0,
         skippedReason: "locked",
         error: error.message,
-      };
+      });
     }
     const message = error instanceof Error ? error.message : "edition failed";
-    return {
+    return withCost({
       status: "error",
       editionId: null,
       newItemCount: 0,
       costUsdApprox: 0,
       error: message,
-    };
+    });
   }
 }
 
 async function runEditionLocked(
-  input: RunEditionInput & { now: Date; store: EditionStore }
+  input: RunEditionInput & { now: Date; store: EditionStore; ledger: CostLedger }
 ): Promise<EditionJobResult> {
-  const { slot, repositories, store, now } = input;
+  const { slot, repositories, store, now, ledger } = input;
   const force = input.force === true;
   const env = input.env ?? {};
   const fetchers = input.fetchers ?? {};
-  const ledger = createCostLedger();
   const calendarDate = calendarDateBrt(now);
   const id = editionId(calendarDate, slot);
   const capturedAt = now.toISOString();

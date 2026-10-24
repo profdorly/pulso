@@ -688,6 +688,63 @@ describe("runEdition", () => {
     expect(edition?.costBreakdown.some((row) => row.step === "summarize")).toBe(true);
   });
 
+  it("reports what was already spent when a later step throws", async () => {
+    const fresh = item({
+      title: "Wired on the launch",
+      url: "https://www.wired.com/story/launch",
+      sourceId: "wired-ai",
+      block: "impartial",
+      region: "us",
+    });
+
+    const result = await runEdition({
+      slot: "tarde",
+      now,
+      editionsDir,
+      lockPath,
+      repositories: testDb.repositories,
+      env: { OPENAI_API_KEY: "k", OPENAI_MODEL_WORKER: "gpt-6-luna" },
+      fetchers: {
+        fetchRssSources: () =>
+          Promise.resolve({ items: [fresh], results: [{ sourceId: "wired-ai", items: [fresh] }] }),
+        enrichEditionItems: (items) =>
+          Promise.resolve({
+            items,
+            dropped: [],
+            unclassified: [],
+            model: "gpt-6-luna",
+            usage: { inputTokens: 1_000_000, outputTokens: 0 },
+          }),
+        verifyEditionLinks: () => Promise.reject(new Error("rede caiu")),
+      },
+    });
+
+    expect(result.status).toBe("error");
+    // 1M input tokens of gpt-6-luna at US$ 0.10 per million: spent before the failure.
+    expect(result.costUsdApprox).toBeCloseTo(0.1, 6);
+    expect(result.costBreakdown).toEqual([
+      { step: "worker", model: "gpt-6-luna", inputTokens: 1_000_000, outputTokens: 0, webSearchCalls: 0, usd: 0.1 },
+    ]);
+  });
+
+  it("carries the cost breakdown on a run that publishes nothing", async () => {
+    const result = await runEdition({
+      slot: "tarde",
+      now,
+      editionsDir,
+      lockPath,
+      repositories: testDb.repositories,
+      env: { OPENAI_API_KEY: "k" },
+      fetchers: {
+        fetchRssSources: () => Promise.resolve({ items: [], results: [] }),
+      },
+    });
+
+    expect(result.status).not.toBe("error");
+    expect(result.costUsdApprox).toBe(0);
+    expect(result.costBreakdown).toEqual([]);
+  });
+
   it("removes a paragraph the auditor rejects and keeps the item", async () => {
     const fresh = item({
       title: "Wired on the launch",
