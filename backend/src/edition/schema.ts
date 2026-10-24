@@ -207,11 +207,18 @@ export type PulsoIndex = z.infer<typeof pulsoIndexSchema>;
 
 export type EditionJobStatus = "published" | "unchanged" | "partial" | "error";
 
+export type CostBreakdownRow = PulsoEdition["costBreakdown"][number];
+
 export interface EditionJobResult {
   status: EditionJobStatus;
   editionId: string | null;
   newItemCount: number;
   costUsdApprox: number;
+  /**
+   * What `costUsdApprox` is made of, on every exit — also the ones that publish nothing or fail.
+   * The edition artifact keeps it only when an edition is written; the run report keeps it always.
+   */
+  costBreakdown?: CostBreakdownRow[];
   revision?: number;
   skippedReason?: "no-delta" | "slot-already-published" | "locked";
   error?: string;

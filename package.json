@@ -15,6 +15,7 @@
     "kitchen:export": "npm run kitchen:export --workspace=backend --",
     "kitchen:import": "npm run kitchen:import --workspace=backend --",
     "kitchen:weekly": "npm run kitchen:weekly --workspace=backend --",
+    "health": "npm run health --workspace=backend --",
     "spike:auditor": "cd backend && npx tsx src/edition/auditorCli.ts",
     "build": "npm run build --workspace=backend && npm run build --workspace=frontend",
     "build:site": "node scripts/rasterize-og.mjs && npm run build --workspace=frontend && npm run build:ssr --workspace=frontend && node scripts/build-site.mjs && node scripts/rasterize-covers.mjs && node scripts/prerender.mjs",
