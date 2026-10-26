@@ -36,23 +36,53 @@ export async function collect<T>(
   }
 }
 
+/** Waits before the 2nd and 3rd attempt of a request that failed on the server side. */
+export const RETRY_DELAYS_MS = [1_000, 3_000];
+
 /**
  * GET or POST that throws a short, body-free message on failure. The response body is left out
  * on purpose: some APIs echo the request, and the request carries the key.
+ *
+ * A 5xx or a network error is tried again twice: GitHub's run listing answers 502 now and then
+ * when it takes too long on its side, and that one hiccup used to blank the whole GitHub section.
+ * 4xx answers are not retried; another try gives the same answer.
  */
-export async function request(fetchImpl: Fetch, label: string, url: string, init: RequestInit = {}): Promise<Response> {
-  const response = await fetchImpl(url, { ...init, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
-  if (!response.ok) {
+export async function request(
+  fetchImpl: Fetch,
+  label: string,
+  url: string,
+  init: RequestInit = {},
+  delays: readonly number[] = RETRY_DELAYS_MS
+): Promise<Response> {
+  for (let attempt = 0; ; attempt++) {
+    let response: Response;
+    try {
+      response = await fetchImpl(url, { ...init, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
+    } catch (error) {
+      if (attempt < delays.length) {
+        await sleep(delays[attempt]);
+        continue;
+      }
+      throw new Error(`${label} não respondeu: ${error instanceof Error ? error.message : String(error)}`, { cause: error });
+    }
+    if (response.ok) return response;
+    if (response.status >= 500 && attempt < delays.length) {
+      await sleep(delays[attempt]);
+      continue;
+    }
     const hint =
       response.status === 401 || response.status === 403
         ? " (chave inválida ou sem permissão)"
         : response.status === 429
           ? " (limite de requisições; tente de novo em um minuto)"
-          : "";
+          : response.status >= 500
+            ? ` (falha do lado do ${label}, mesmo depois de ${delays.length + 1} tentativas; tente de novo em alguns minutos)`
+            : "";
     throw new Error(`${label} respondeu HTTP ${response.status}${hint}`);
   }
-  return response;
 }
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 /** Runs `task` over `items`, `limit` at a time, keeping order. */
 export async function mapLimit<T, R>(items: readonly T[], limit: number, task: (item: T) => Promise<R>): Promise<R[]> {

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { collectCloudflare, cronAt, cronSlots, type Invocation } from "./cloudflare.js";
 import { artifactText, collectGithub } from "./github.js";
 import { collectHealthchecks } from "./healthchecks.js";
-import { collect } from "./source.js";
+import { collect, request } from "./source.js";
 import { fakeFetch, json, report } from "./testFixtures.js";
 
 /** A one-entry zip as a streaming writer makes it: sizes only after the data and in the directory. */
@@ -36,6 +36,34 @@ function streamedZip(name: string, content: string): Buffer {
   eocd.writeUInt32LE(local.length + fileName.length + extra.length + data.length + descriptor.length, 16);
   return Buffer.concat([local, fileName, extra, data, descriptor, central, fileName, eocd]);
 }
+
+describe("request", () => {
+  it("tries a 5xx again and gives up with a clear message after three tries", async () => {
+    let calls = 0;
+    const flaky: typeof fetch = () => Promise.resolve(new Response("", { status: calls++ < 2 ? 502 : 200 }));
+    expect((await request(flaky, "GitHub", "https://api.github.com/x", {}, [0, 0])).status).toBe(200);
+    expect(calls).toBe(3);
+
+    const down: typeof fetch = () => Promise.resolve(new Response("", { status: 502 }));
+    await expect(request(down, "GitHub", "https://api.github.com/x", {}, [0, 0])).rejects.toThrow(
+      "GitHub respondeu HTTP 502 (falha do lado do GitHub, mesmo depois de 3 tentativas"
+    );
+  });
+
+  it("does not retry a 4xx, and retries a network error", async () => {
+    let calls = 0;
+    const denied: typeof fetch = () => {
+      calls++;
+      return Promise.resolve(new Response("", { status: 401 }));
+    };
+    await expect(request(denied, "GitHub", "https://api.github.com/x", {}, [0, 0])).rejects.toThrow("HTTP 401");
+    expect(calls).toBe(1);
+
+    let tries = 0;
+    const offline: typeof fetch = () => (tries++ < 1 ? Promise.reject(new Error("ECONNRESET")) : Promise.resolve(new Response("ok")));
+    expect((await request(offline, "GitHub", "https://api.github.com/x", {}, [0, 0])).ok).toBe(true);
+  });
+});
 
 describe("artifactText", () => {
   it("reads an unarchived file as is and a zipped one through its directory", () => {
