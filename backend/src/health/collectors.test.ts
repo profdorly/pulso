@@ -1,6 +1,6 @@
 import { deflateRawSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
-import { collectCloudflare, cronSlots, type Invocation } from "./cloudflare.js";
+import { collectCloudflare, cronAt, cronSlots, type Invocation } from "./cloudflare.js";
 import { artifactText, collectGithub } from "./github.js";
 import { collectHealthchecks } from "./healthchecks.js";
 import { collect } from "./source.js";
@@ -201,6 +201,15 @@ describe("cronSlots", () => {
   });
 });
 
+describe("cronAt", () => {
+  it("names the cron a minute belongs to, a few minutes either way", () => {
+    const crons = ["32 10 * * *", "5 12 * * *"];
+    expect(cronAt(crons, "2026-10-24T10:32:00Z")).toBe("32 10 * * *");
+    expect(cronAt(crons, "2026-10-24T12:08:00Z")).toBe("5 12 * * *");
+    expect(cronAt(crons, "2026-10-24T14:00:00Z")).toBeNull();
+  });
+});
+
 describe("collectCloudflare", () => {
   const input = {
     accountId: "conta-teste",
@@ -221,8 +230,8 @@ describe("collectCloudflare", () => {
               viewer: {
                 accounts: [
                   {
-                    workersInvocationsScheduled: [
-                      { datetime: "2026-10-24T10:32:01Z", scheduledDatetime: "2026-10-24T10:32:00Z", cron: "32 10 * * *", status: "success" },
+                    workersInvocationsAdaptive: [
+                      { sum: { requests: 1 }, dimensions: { datetimeMinute: "2026-10-24T10:32:00Z", status: "success" } },
                     ],
                   },
                 ],
@@ -243,6 +252,31 @@ describe("collectCloudflare", () => {
       from: "2026-10-24T00:00:00.000Z",
       to: "2026-10-24T12:00:00.000Z",
     });
+  });
+
+  it("asks a week at a time, and keeps the newer weeks when an older one is refused", async () => {
+    const window = { from: new Date("2026-09-24T15:00:00Z"), to: new Date("2026-10-24T15:00:00Z") };
+    const bodies: Array<{ from: string; to: string }> = [];
+    let call = 0;
+    const fetchImpl: typeof fetch = (_url, init) => {
+      bodies.push((JSON.parse(init?.body as string) as { variables: { from: string; to: string } }).variables);
+      call += 1;
+      return Promise.resolve(
+        call <= 2
+          ? json({ data: { viewer: { accounts: [{ workersInvocationsAdaptive: [] }] } }, errors: null })
+          : json({ data: null, errors: [{ message: "cannot request data older than 2w" }] })
+      );
+    };
+
+    const data = await collectCloudflare({ ...input, ...window, fetchImpl });
+
+    expect(bodies).toHaveLength(3);
+    for (const body of bodies) {
+      expect(Date.parse(body.to) - Date.parse(body.from)).toBeLessThan(7 * 24 * 60 * 60_000);
+    }
+    expect(bodies[0].to).toBe(window.to.toISOString());
+    expect(data.limit).toContain("older than 2w");
+    expect(data.from).toBe(bodies[1].from);
   });
 
   it("surfaces GraphQL errors and an account the token cannot see", async () => {

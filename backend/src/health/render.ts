@@ -356,7 +356,10 @@ function cronClock(cron: string): string {
 function workerSection(snapshot: HealthSnapshot): string {
   const title = "Disparador (Worker da Cloudflare)";
   if (snapshot.cloudflare.state !== "ok") return section("disparador", title, notice(snapshot.cloudflare, "os disparos do Worker"));
-  const { slots, unmatched, worker } = snapshot.cloudflare.data;
+  const { slots, unmatched, worker, limit, from } = snapshot.cloudflare.data;
+  const limitNote = limit
+    ? `<p class="nota">A Cloudflare só devolveu os disparos a partir de ${e(formatWhen(from))}; o plano não guarda os mais antigos.</p>`
+    : "";
   if (slots.length === 0) {
     return section("disparador", title, `<p>Nenhum horário diário do <code>${e(worker)}</code> caiu na janela.</p>`);
   }
@@ -389,7 +392,7 @@ function workerSection(snapshot: HealthSnapshot): string {
   return section(
     "disparador",
     title,
-    `${table(`${worker}: cada horário do cron, em Brasília`, ["Dia", ...crons.map(cronClock)], rows)}\n${extra}\n<p class="nota">“Faltou”: a Cloudflare não disparou o cron. “Falhou”: o pedido ao GitHub falhou nas três tentativas. Um horário só conta depois de 15 minutos.</p>`
+    `${table(`${worker}: cada horário do cron, em Brasília`, ["Dia", ...crons.map(cronClock)], rows)}\n${extra}\n${limitNote}\n<p class="nota">“Faltou”: a Cloudflare não disparou o cron. “Falhou”: o pedido ao GitHub falhou nas três tentativas. Um horário só conta depois de 15 minutos.</p>`
   );
 }
 

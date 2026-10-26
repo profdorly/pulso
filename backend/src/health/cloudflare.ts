@@ -2,12 +2,17 @@ import { z } from "zod";
 import { request, type Fetch } from "./source.js";
 
 /**
- * The trigger Worker's scheduled invocations, from Cloudflare's GraphQL Analytics API, matched
- * against the crons in its wrangler.jsonc.
+ * The trigger Worker's invocations, from Cloudflare's GraphQL Analytics API, matched against the
+ * crons in its wrangler.jsonc.
  *
  * A failed invocation is the dispatch to GitHub failing all three attempts. A missing one is a
  * cron Cloudflare never fired, which the Worker cannot report about itself — the reason to look
  * from outside.
+ *
+ * Read from `workersInvocationsAdaptive` per minute, not from `workersInvocationsScheduled`: on
+ * this account (free plan) the scheduled dataset answers empty while the general one has every
+ * cron run. The Worker has no route, so every invocation it counts is a cron; the cron each one
+ * answered is inferred from its minute.
  */
 
 const GRAPHQL = "https://api.cloudflare.com/client/v4/graphql";
@@ -19,38 +24,48 @@ const SLOT_MATCH_MS = 5 * 60_000;
 const QUERY = `query PulsoHealth($account: String!, $script: String!, $from: Time!, $to: Time!) {
   viewer {
     accounts(filter: { accountTag: $account }) {
-      workersInvocationsScheduled(
+      workersInvocationsAdaptive(
         limit: 10000
         filter: { scriptName: $script, datetime_geq: $from, datetime_leq: $to }
-        orderBy: [datetime_ASC]
+        orderBy: [datetimeMinute_ASC]
       ) {
-        datetime
-        scheduledDatetime
-        cron
-        status
+        sum { requests }
+        dimensions { datetimeMinute status }
       }
     }
   }
 }`;
 
-const invocationSchema = z.object({
-  datetime: z.string(),
-  scheduledDatetime: z.string().nullable().optional(),
-  cron: z.string().nullable().optional(),
-  status: z.string(),
+const rowSchema = z.object({
+  sum: z.object({ requests: z.number() }),
+  dimensions: z.object({ datetimeMinute: z.string(), status: z.string() }),
 });
 
 const responseSchema = z.object({
   data: z
     .object({
       viewer: z.object({
-        accounts: z.array(z.object({ workersInvocationsScheduled: z.array(invocationSchema) })),
+        accounts: z.array(z.object({ workersInvocationsAdaptive: z.array(rowSchema) })),
       }),
     })
     .nullable()
     .optional(),
   errors: z.array(z.object({ message: z.string() })).nullable().optional(),
 });
+
+/** The daily cron (`M H * * *`, UTC) whose time of day is within SLOT_MATCH_MS of `iso`. */
+export function cronAt(crons: readonly string[], iso: string): string | null {
+  const at = new Date(iso);
+  const minuteOfDay = at.getUTCHours() * 60 + at.getUTCMinutes();
+  for (const cron of crons) {
+    const match = DAILY_CRON.exec(cron.trim());
+    if (!match) continue;
+    const slot = Number(match[2]) * 60 + Number(match[1]);
+    const distance = Math.min(Math.abs(minuteOfDay - slot), 1440 - Math.abs(minuteOfDay - slot));
+    if (distance * 60_000 <= SLOT_MATCH_MS) return cron;
+  }
+  return null;
+}
 
 export interface Invocation {
   datetime: string;
@@ -80,6 +95,8 @@ export interface CloudflareData {
   slots: CronSlot[];
   /** Invocations that match no cron slot: a manual trigger from the dashboard, an old cron. */
   unmatched: Invocation[];
+  /** Set when Cloudflare refused the older part of the window; `from` is then where data starts. */
+  limit?: string;
 }
 
 const DAILY_CRON = /^(\d{1,2})\s+(\d{1,2})\s+\*\s+\*\s+\*$/;
@@ -136,15 +153,26 @@ export function cronSlots(
   return { slots, unmatched: invocations.filter((invocation) => !used.has(invocation)) };
 }
 
-export async function collectCloudflare(input: {
-  accountId: string;
-  token: string;
-  worker: string;
-  crons: readonly string[];
-  from: Date;
-  to: Date;
-  fetchImpl?: Fetch;
-}): Promise<CloudflareData> {
+/**
+ * The free plan answers at most one week per query ("cannot request a time range wider than 1w"),
+ * so the window is asked for in pieces a minute short of that.
+ */
+export const CHUNK_MS = 7 * 24 * 60 * 60_000 - 60_000;
+
+/** The window split into pieces of at most CHUNK_MS, newest first. */
+export function chunks(from: Date, to: Date): Array<{ from: Date; to: Date }> {
+  const pieces: Array<{ from: Date; to: Date }> = [];
+  for (let end = to.getTime(); end > from.getTime(); end -= CHUNK_MS) {
+    pieces.push({ from: new Date(Math.max(from.getTime(), end - CHUNK_MS)), to: new Date(end) });
+  }
+  return pieces;
+}
+
+async function queryInvocations(
+  input: { accountId: string; token: string; worker: string; crons: readonly string[]; fetchImpl?: Fetch },
+  from: Date,
+  to: Date
+): Promise<Invocation[]> {
   const response = await request(input.fetchImpl ?? fetch, "Cloudflare", GRAPHQL, {
     method: "POST",
     headers: {
@@ -154,12 +182,7 @@ export async function collectCloudflare(input: {
     },
     body: JSON.stringify({
       query: QUERY,
-      variables: {
-        account: input.accountId,
-        script: input.worker,
-        from: input.from.toISOString(),
-        to: input.to.toISOString(),
-      },
+      variables: { account: input.accountId, script: input.worker, from: from.toISOString(), to: to.toISOString() },
     }),
   });
   const body = responseSchema.parse(await response.json());
@@ -168,20 +191,51 @@ export async function collectCloudflare(input: {
   }
   const accounts = body.data?.viewer.accounts ?? [];
   if (accounts.length === 0) throw new Error("Cloudflare: conta não encontrada, ou o token não tem acesso a ela");
+  // One row per minute and status; `requests` above 1 means several runs in that minute.
+  return accounts[0].workersInvocationsAdaptive.flatMap((row) =>
+    Array.from({ length: row.sum.requests }, () => ({
+      datetime: row.dimensions.datetimeMinute,
+      scheduledAt: null,
+      cron: cronAt(input.crons, row.dimensions.datetimeMinute),
+      status: row.dimensions.status,
+    }))
+  );
+}
 
-  const invocations: Invocation[] = accounts[0].workersInvocationsScheduled.map((row) => ({
-    datetime: row.datetime,
-    scheduledAt: row.scheduledDatetime ?? null,
-    cron: row.cron ?? null,
-    status: row.status,
-  }));
-  const { slots, unmatched } = cronSlots(input.crons, invocations, input.from, input.to);
+export async function collectCloudflare(input: {
+  accountId: string;
+  token: string;
+  worker: string;
+  crons: readonly string[];
+  from: Date;
+  to: Date;
+  fetchImpl?: Fetch;
+}): Promise<CloudflareData> {
+  const invocations: Invocation[] = [];
+  let coveredFrom = input.to;
+  let limit: string | undefined;
+
+  for (const piece of chunks(input.from, input.to)) {
+    try {
+      invocations.push(...(await queryInvocations(input, piece.from, piece.to)));
+      coveredFrom = piece.from;
+    } catch (error) {
+      // The newest week failing is a real error. An older one failing is the plan's retention:
+      // keep what came back and say how far it reaches.
+      if (coveredFrom === input.to) throw error;
+      limit = error instanceof Error ? error.message : String(error);
+      break;
+    }
+  }
+
+  const { slots, unmatched } = cronSlots(input.crons, invocations, coveredFrom, input.to);
   return {
     worker: input.worker,
     crons: [...input.crons],
-    from: input.from.toISOString(),
+    from: coveredFrom.toISOString(),
     to: input.to.toISOString(),
     slots,
     unmatched,
+    ...(limit ? { limit } : {}),
   };
 }
