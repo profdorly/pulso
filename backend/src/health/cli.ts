@@ -20,6 +20,23 @@ import { collect, type Source } from "./source.js";
  * `index.html` plus the `snapshot.json` it was drawn from. Sources left unconfigured show as such.
  */
 
+/** The site's own fonts (frontend/public/fonts), inlined: the page has no server to load them from. */
+const FONTS: Array<[family: string, weight: number, file: string]> = [
+  ["Playfair Display", 500, "playfair-display-500-latin.woff2"],
+  ["IBM Plex Sans", 400, "ibm-plex-sans-400-latin.woff2"],
+  ["IBM Plex Sans", 600, "ibm-plex-sans-600-latin.woff2"],
+  ["IBM Plex Mono", 500, "ibm-plex-mono-500-latin.woff2"],
+];
+
+function fontCss(root: string): string {
+  return FONTS.map(([family, weight, file]) => {
+    const full = path.join(root, "frontend", "public", "fonts", file);
+    if (!existsSync(full)) return "";
+    const data = readFileSync(full).toString("base64");
+    return `@font-face{font-family:'${family}';font-weight:${weight};font-style:normal;font-display:swap;src:url(data:font/woff2;base64,${data}) format('woff2')}`;
+  }).join("");
+}
+
 function readIfExists(file: string): string | undefined {
   return existsSync(file) ? readFileSync(file, "utf8") : undefined;
 }
@@ -100,7 +117,7 @@ async function main(): Promise<void> {
 
   mkdirSync(settings.outDir, { recursive: true });
   const page = path.join(settings.outDir, "index.html");
-  writeFileSync(page, renderHealthPage(snapshot));
+  writeFileSync(page, renderHealthPage(snapshot, { fontCss: fontCss(root) }));
   writeFileSync(path.join(settings.outDir, "snapshot.json"), `${JSON.stringify(snapshot, null, 2)}\n`);
 
   for (const line of [

@@ -26,6 +26,19 @@ const costEntrySchema = z.object({
   priced: z.boolean(),
 });
 
+/** Numbers about the written edition; optional, since reports from before it have none. */
+const qualitySchema = z.object({
+  kind: z.enum(["regular", "quiet"]),
+  items: z.number(),
+  withSummary: z.number(),
+  feedsFailed: z.number(),
+  stepNotes: z.array(z.string()),
+  audited: z.number().nullable(),
+  auditRemoved: z.number().nullable(),
+  gateDropped: z.number(),
+  headlineFellBack: z.boolean(),
+});
+
 const jobSchema = z.object({
   kind: z.enum(["edition", "catalogue"]),
   status: z.enum(["published", "unchanged", "partial", "error"]),
@@ -33,6 +46,7 @@ const jobSchema = z.object({
   newItemCount: z.number(),
   skippedReason: z.enum(["no-delta", "slot-already-published", "locked"]).nullable(),
   costUsd: z.number(),
+  quality: qualitySchema.optional(),
 });
 
 export const runReportSchema = z.object({
@@ -103,6 +117,7 @@ export function buildRunReport(input: {
       newItemCount: result.newItemCount,
       skippedReason: result.skippedReason ?? null,
       costUsd: result.costUsdApprox,
+      ...(result.quality ? { quality: { ...result.quality, stepNotes: [...result.quality.stepNotes] } } : {}),
     })),
     cost: {
       totalUsd: Number(totalUsd.toFixed(6)),

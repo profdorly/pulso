@@ -1,13 +1,16 @@
 import { TIMEZONE } from "../edition/schema.js";
+import type { RunReportJob } from "../kitchen/runReport.js";
 import { editionOutcome, summarizeCost, type CostSummary, type CostTotals, type EditionOutcome } from "./aggregate.js";
-import type { CloudflareData, CronSlot } from "./cloudflare.js";
+import type { CloudflareData } from "./cloudflare.js";
 import type { GithubData, GithubRun } from "./github.js";
 import type { HealthchecksData } from "./healthchecks.js";
 import type { Source } from "./source.js";
+import { statusLanes, verdict, type DayCell, type Level, type Verdict } from "./status.js";
 
 /**
- * The panel as one static HTML file: no script, no request out (the CSP forbids both), every
- * value escaped. It is opened from disk, and nothing in it can change anything anywhere.
+ * The panel as one static HTML file in the site's "Papel & Brasa" system (frontend/src/index.css):
+ * no script, no request out (the CSP forbids both), every value escaped. Fonts, when given, are
+ * inlined as data URIs, so the page looks the same opened straight from disk.
  */
 
 export interface HealthSnapshot {
@@ -19,7 +22,8 @@ export interface HealthSnapshot {
   cloudflare: Source<CloudflareData>;
 }
 
-export const PAGE_CSP = "default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'";
+export const PAGE_CSP =
+  "default-src 'none'; style-src 'unsafe-inline'; font-src data:; img-src data:; base-uri 'none'; form-action 'none'";
 
 const DASH = "—";
 
@@ -35,9 +39,8 @@ export function escapeHtml(value: string): string {
 const e = escapeHtml;
 type Tone = "ok" | "warn" | "bad" | "muted" | "";
 
-function tag(text: string, tone: Tone, title?: string): string {
-  const attrs = `${tone ? ` class="${tone}"` : ""}${title ? ` title="${e(title)}"` : ""}`;
-  return attrs ? `<span${attrs}>${e(text)}</span>` : e(text);
+function pill(text: string, tone: Tone, title?: string): string {
+  return `<span class="pill${tone ? ` pill--${tone}` : ""}"${title ? ` title="${e(title)}"` : ""}>${e(text)}</span>`;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -46,37 +49,27 @@ function tag(text: string, tone: Tone, title?: string): string {
 const usdSmall = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 4 });
 const usdLarge = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const integer = new Intl.NumberFormat("pt-BR");
-const percent = new Intl.NumberFormat("pt-BR", { style: "percent", maximumFractionDigits: 0 });
-const dateTime = new Intl.DateTimeFormat("pt-BR", {
-  timeZone: TIMEZONE,
-  day: "2-digit",
-  month: "2-digit",
-  hour: "2-digit",
-  minute: "2-digit",
-});
+const compact = new Intl.NumberFormat("pt-BR", { notation: "compact", maximumFractionDigits: 1 });
+const dateTime = new Intl.DateTimeFormat("pt-BR", { timeZone: TIMEZONE, day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
 const fullDateTime = new Intl.DateTimeFormat("pt-BR", { timeZone: TIMEZONE, dateStyle: "short", timeStyle: "short" });
-const clock = new Intl.DateTimeFormat("pt-BR", { timeZone: TIMEZONE, hour: "2-digit", minute: "2-digit" });
 const weekday = new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC", weekday: "short", day: "2-digit", month: "2-digit" });
-const monthName = new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC", month: "long", year: "numeric" });
+const shortDay = new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC", day: "2-digit", month: "2-digit" });
+const monthName = new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC", month: "long" });
 
 export function formatUsd(value: number | null | undefined): string {
   if (value === null || value === undefined || !Number.isFinite(value)) return DASH;
-  return (Math.abs(value) < 1 ? usdSmall : usdLarge).format(value);
+  // Four decimals only where two would round a real cost to zero (a single Luna call).
+  return (Math.abs(value) < 0.1 ? usdSmall : usdLarge).format(value);
 }
 
-function formatInt(value: number | null | undefined): string {
-  return value === null || value === undefined ? DASH : integer.format(value);
-}
+const formatInt = (value: number | null | undefined) => (value === null || value === undefined ? DASH : integer.format(value));
 
 function formatWhen(iso: string | null | undefined, format = dateTime): string {
   if (!iso || !Number.isFinite(Date.parse(iso))) return DASH;
   return format.format(new Date(iso));
 }
 
-/** A Brasília calendar date (YYYY-MM-DD) as "sex., 24/10". */
-function formatDay(date: string): string {
-  return weekday.format(new Date(`${date}T12:00:00Z`));
-}
+const formatDay = (date: string, format = weekday) => format.format(new Date(`${date}T12:00:00Z`));
 
 function formatDuration(ms: number): string {
   if (!Number.isFinite(ms) || ms < 0) return DASH;
@@ -89,10 +82,25 @@ function formatDuration(ms: number): string {
 // ---------------------------------------------------------------------------------------------
 // Labels
 
-const EVENT_LABEL: Record<string, string> = {
-  schedule: "cron de reserva",
-  workflow_dispatch: "disparo",
-  push: "push na main",
+const EVENT_LABEL: Record<string, string> = { schedule: "cron de reserva", workflow_dispatch: "disparo", push: "push na main" };
+
+const STEP_LABEL: Record<string, string> = {
+  search: "busca na web",
+  "search-filter": "filtro da busca",
+  worker: "classificação",
+  summarize: "resumos",
+  editorial: "editorial",
+  humanize: "revisão de estilo",
+  audit: "auditoria",
+};
+
+const NOTE_LABEL: Record<string, string> = {
+  "pulso-audit": "auditoria",
+  "pulso-cost": "custo",
+  "pulso-worker": "classificação",
+  "pulso-editorial": "editorial",
+  "pulso-humanize": "revisão",
+  "pulso-gate": "checagem",
 };
 
 const OUTCOME_LABEL: Record<EditionOutcome, [string, Tone]> = {
@@ -103,37 +111,6 @@ const OUTCOME_LABEL: Record<EditionOutcome, [string, Tone]> = {
   failed: ["falhou", "bad"],
 };
 
-function runResult(run: GithubRun): string {
-  if (run.status !== "completed") return tag(run.status === "in_progress" ? "rodando" : "na fila", "warn");
-  switch (run.conclusion) {
-    case "success":
-      return tag("ok", "ok");
-    case "failure":
-      return tag("falhou", "bad");
-    case "cancelled":
-      return tag("cancelada", "warn");
-    case "timed_out":
-      return tag("estourou o tempo", "bad");
-    case "skipped":
-      return tag("pulada", "muted");
-    default:
-      return e(run.conclusion ?? DASH);
-  }
-}
-
-function kitchenSummary(run: GithubRun): string {
-  const report = run.reports.at(-1);
-  if (!report) return run.unreadableReports > 0 ? tag("relatório ilegível", "warn") : DASH;
-  const parts: string[] = [];
-  const edition = report.jobs.find((job) => job.kind === "edition");
-  const outcome = edition ? editionOutcome(edition) : null;
-  if (outcome) parts.push(tag(...OUTCOME_LABEL[outcome]));
-  if (report.catalogue === "captured") parts.push(tag("catálogo capturado", "ok"));
-  if (report.catalogue === "failed") parts.push(tag("catálogo falhou", "bad"));
-  if (report.outcome === "failed") parts.push(tag("cozinha falhou", "bad"));
-  return parts.length > 0 ? parts.join(", ") : DASH;
-}
-
 const MONITOR_STATUS: Record<string, [string, Tone]> = {
   up: ["no ar", "ok"],
   grace: ["atrasado", "warn"],
@@ -142,12 +119,36 @@ const MONITOR_STATUS: Record<string, [string, Tone]> = {
   new: ["sem ping ainda", "muted"],
 };
 
-const SLOT_LABEL: Record<CronSlot["state"], [string, Tone, string]> = {
-  ok: ["ok", "ok", "disparou e o GitHub aceitou"],
-  failed: ["falhou", "bad", "o pedido ao GitHub falhou nas três tentativas"],
-  missing: ["faltou", "bad", "a Cloudflare não disparou o cron"],
-  before: [DASH, "muted", "antes do primeiro disparo deste horário na janela"],
-};
+function runResult(run: GithubRun): string {
+  if (run.status !== "completed") return pill(run.status === "in_progress" ? "rodando" : "na fila", "warn");
+  switch (run.conclusion) {
+    case "success":
+      return pill("ok", "ok");
+    case "failure":
+      return pill("falhou", "bad");
+    case "cancelled":
+      return pill("cancelada", "warn");
+    case "timed_out":
+      return pill("estourou o tempo", "bad");
+    case "skipped":
+      return pill("pulada", "muted");
+    default:
+      return e(run.conclusion ?? DASH);
+  }
+}
+
+function kitchenSummary(run: GithubRun): string {
+  const report = run.reports.at(-1);
+  if (!report) return run.unreadableReports > 0 ? pill("relatório ilegível", "warn") : `<span class="muted">${DASH}</span>`;
+  const parts: string[] = [];
+  const edition = report.jobs.find((job) => job.kind === "edition");
+  const outcome = edition ? editionOutcome(edition) : null;
+  if (outcome) parts.push(pill(...OUTCOME_LABEL[outcome]));
+  if (report.catalogue === "captured") parts.push(pill("catálogo capturado", "ok"));
+  if (report.catalogue === "failed") parts.push(pill("catálogo falhou", "bad"));
+  if (report.outcome === "failed") parts.push(pill("cozinha falhou", "bad"));
+  return parts.length > 0 ? parts.join(" ") : DASH;
+}
 
 // ---------------------------------------------------------------------------------------------
 // Building blocks
@@ -158,7 +159,7 @@ function notice(source: Source<unknown>, what: string): string {
     return `<p class="aviso">Não configurado. Para ver ${e(what)}, preencha ${names} em <code>.env.health</code> (modelo em <code>.env.health.example</code>).</p>`;
   }
   if (source.state === "error") {
-    return `<p class="aviso"><span class="bad">Não deu para ler ${e(what)}:</span> ${e(source.message)}</p>`;
+    return `<p class="aviso aviso--bad"><strong>Não deu para ler ${e(what)}.</strong> ${e(source.message)}</p>`;
   }
   return "";
 }
@@ -167,21 +168,18 @@ function table(caption: string, head: string[], rows: string[][], numeric: numbe
   if (rows.length === 0) return "";
   const cls = (index: number) => (numeric.includes(index) ? ' class="num"' : "");
   return [
-    "<table>",
+    '<div class="tabela"><table>',
     `<caption>${e(caption)}</caption>`,
     `<thead><tr>${head.map((cell, index) => `<th scope="col"${cls(index)}>${e(cell)}</th>`).join("")}</tr></thead>`,
     "<tbody>",
-    ...rows.map(
-      (row) =>
-        `<tr>${row.map((cell, index) => (index === 0 ? `<th scope="row">${cell}</th>` : `<td${cls(index)}>${cell}</td>`)).join("")}</tr>`
-    ),
+    ...rows.map((row) => `<tr>${row.map((cell, index) => (index === 0 ? `<th scope="row">${cell}</th>` : `<td${cls(index)}>${cell}</td>`)).join("")}</tr>`),
     "</tbody>",
-    "</table>",
+    "</table></div>",
   ].join("\n");
 }
 
-function section(id: string, title: string, body: string): string {
-  return `<section aria-labelledby="${id}">\n<h2 id="${id}">${e(title)}</h2>\n${body}\n</section>`;
+function section(id: string, kicker: string, title: string, body: string): string {
+  return `<section class="bloco" aria-labelledby="${id}">\n<p class="kicker">${e(kicker)}</p>\n<h2 id="${id}" class="titulo-secao">${e(title)}</h2>\n${body}\n</section>`;
 }
 
 function githubLink(url: string, label: string): string {
@@ -190,246 +188,404 @@ function githubLink(url: string, label: string): string {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Sections
+// Verdict and status strips
 
-function summarySection(snapshot: HealthSnapshot, cost: CostSummary | null): string {
-  const items: Array<[string, string]> = [];
-  const month = cost ? monthName.format(new Date(`${cost.month}-15T12:00:00Z`)) : "do mês";
+const VERDICT_MARK: Record<Verdict["level"], string> = { ok: "ok", warn: "atenção", bad: "falha", pending: "aguardando", unknown: "sem dado" };
 
-  items.push([`Gasto nos últimos ${snapshot.days} dias`, e(formatUsd(cost?.windowUsd))]);
-  items.push([`Gasto em ${month}`, e(formatUsd(cost?.monthUsd))]);
-  items.push(["Edições publicadas", e(cost && cost.reports > 0 ? formatInt(cost.publishedEditions) : DASH)]);
-  items.push(["Custo por edição publicada", e(formatUsd(cost?.perEditionUsd))]);
-  if (cost?.priciest) {
-    const { usd, budgetUsd, run } = cost.priciest;
-    const share = budgetUsd > 0 ? ` (${percent.format(usd / budgetUsd)} do teto de ${formatUsd(budgetUsd)})` : "";
-    items.push(["Corrida mais cara", `${githubLink(run.url, formatUsd(usd))}${e(share)}`]);
-  } else {
-    items.push(["Corrida mais cara", DASH]);
-  }
-  items.push([
-    "Corridas que falharam",
-    cost ? tag(`${formatInt(cost.failedRuns)} de ${formatInt(cost.runs)}`, cost.failedRuns > 0 ? "bad" : "ok") : DASH,
-  ]);
-
-  if (snapshot.healthchecks.state === "ok") {
-    const counts = new Map<string, number>();
-    for (const check of snapshot.healthchecks.data.checks) counts.set(check.status, (counts.get(check.status) ?? 0) + 1);
-    const text = [...counts]
-      .map(([status, count]) => {
-        const [label, tone] = MONITOR_STATUS[status] ?? [status, ""];
-        return tag(`${count} ${label}`, tone);
-      })
-      .join(", ");
-    items.push(["Monitores", text || DASH]);
-  } else {
-    items.push(["Monitores", DASH]);
-  }
-
-  if (snapshot.cloudflare.state === "ok") {
-    const slots = snapshot.cloudflare.data.slots;
-    const count = (state: CronSlot["state"]) => slots.filter((slot) => slot.state === state).length;
-    const bad = count("failed") + count("missing");
-    items.push([
-      "Disparos do Worker",
-      tag(`${count("ok")} ok, ${count("failed")} com falha, ${count("missing")} sem disparo`, bad > 0 ? "bad" : "ok"),
-    ]);
-  } else {
-    items.push(["Disparos do Worker", DASH]);
-  }
-
-  const list = items.map(([term, value]) => `<div><dt>${e(term)}</dt><dd>${value}</dd></div>`).join("\n");
-  return section("resumo", "Resumo", `<dl class="resumo">\n${list}\n</dl>`);
+function verdictBlock(v: Verdict, snapshot: HealthSnapshot, repo: string): string {
+  const facts = v.facts.map((fact) => `<span>${e(fact)}</span>`).join("");
+  const issues =
+    v.issues.length > 0
+      ? `<ul class="pendencias">${v.issues.map((issue) => `<li class="pendencia pendencia--${issue.level}"><span class="ponto" aria-hidden="true"></span>${e(issue.text)}</li>`).join("")}</ul>`
+      : "";
+  return `<header class="veredito veredito--${v.level}">
+<p class="kicker">Painel do Pulso · últimos ${snapshot.days} dias${repo ? ` · ${e(repo)}` : ""}</p>
+<div class="veredito-linha"><span class="selo" aria-hidden="true"></span><span class="sr">Estado: ${e(VERDICT_MARK[v.level])}.</span><h1 class="titulo">${e(v.headline)}</h1></div>
+${facts ? `<p class="linha-fatos">${facts}</p>` : ""}
+${issues}
+<p class="nota">Gerado em ${e(formatWhen(snapshot.generatedAt, fullDateTime))}, horário de Brasília. Para atualizar, rode <code>npm run health</code> de novo.</p>
+</header>`;
 }
 
-function totalsRows(rows: CostTotals[], withSearch: boolean): string[][] {
-  return rows.map((row) => [
-    e(row.key) + (row.priced ? "" : ` ${tag("sem preço", "warn", "modelo fora de MODEL_PRICES: custo subestimado")}`),
-    e(formatInt(row.calls)),
-    e(formatInt(row.inputTokens)),
-    e(formatInt(row.outputTokens)),
-    ...(withSearch ? [e(formatInt(row.webSearchCalls))] : []),
-    e(formatUsd(row.usd)),
-  ]);
+function strip(name: string, cells: DayCell[], summary: string): string {
+  const boxes = cells
+    .map((cell) => `<span class="dia dia--${cell.level}" title="${e(`${formatDay(cell.date)}: ${cell.label}`)}"></span>`)
+    .join("");
+  return `<div class="faixa">
+<div class="faixa-topo"><span class="faixa-nome">${e(name)}</span><span class="faixa-resumo">${e(summary)}</span></div>
+<div class="dias" role="img" aria-label="${e(`${name}: ${summary}`)}">${boxes}</div>
+</div>`;
+}
+
+const countLevel = (cells: DayCell[], ...levels: Level[]) => cells.filter((cell) => levels.includes(cell.level)).length;
+
+function statusSection(snapshot: HealthSnapshot, runs: GithubRun[] | null): string {
+  const parts: string[] = [];
+  if (runs) {
+    const lanes = statusLanes({ runs, cloudflare: snapshot.cloudflare, since: new Date(snapshot.since), now: new Date(snapshot.generatedAt) });
+    if (lanes.edition.length > 0) {
+      const known = lanes.edition.length - countLevel(lanes.edition, "none");
+      parts.push(
+        strip(
+          "Edição do dia",
+          lanes.edition,
+          known > 0 ? `${countLevel(lanes.edition, "ok", "warn")} de ${known} ${known === 1 ? "dia" : "dias"} com relatório ${known === 1 ? "publicou" : "publicaram"}` : "sem relatório ainda"
+        )
+      );
+      parts.push(strip("Corridas do publicar.yml", lanes.runs, `${countLevel(lanes.runs, "warn", "bad")} dia(s) com falha`));
+      if (lanes.worker) {
+        const known = lanes.worker.length - countLevel(lanes.worker, "none");
+        parts.push(strip("Disparador (Worker)", lanes.worker, known > 0 ? `${countLevel(lanes.worker, "bad")} dia(s) com disparo perdido` : "sem disparo na janela"));
+      }
+      const first = lanes.edition[0].date;
+      parts.push(`<div class="eixo"><span>${e(formatDay(first, shortDay))}</span><span>hoje</span></div>`);
+      parts.push(`<p class="legenda">${[
+        ["ok", "ok"],
+        ["warn", "com pontos a olhar"],
+        ["bad", "falha"],
+        ["idle", "sem novidade"],
+        ["none", "sem dado"],
+      ]
+        .map(([level, label]) => `<span><span class="dia dia--${level}" aria-hidden="true"></span>${label}</span>`)
+        .join("")}</p>`);
+    }
+  } else {
+    parts.push(notice(snapshot.github, "as corridas do GitHub Actions"));
+  }
+  if (snapshot.cloudflare.state !== "ok") parts.push(notice(snapshot.cloudflare, "os disparos do Worker"));
+  if (snapshot.cloudflare.state === "ok" && snapshot.cloudflare.data.limit) {
+    parts.push(`<p class="nota">A Cloudflare só devolveu os disparos a partir de ${e(formatWhen(snapshot.cloudflare.data.from))}.</p>`);
+  }
+
+  if (snapshot.healthchecks.state === "ok") {
+    const rows = snapshot.healthchecks.data.checks.map((check) => {
+      const [label, tone] = MONITOR_STATUS[check.status] ?? [check.status, ""];
+      return `<li class="monitor"><span class="monitor-nome">${e(check.name)}</span>${pill(label, tone)}<span class="monitor-meta">último ping ${e(formatWhen(check.lastPing))} · próximo ${e(formatWhen(check.nextPing))}</span></li>`;
+    });
+    parts.push(rows.length > 0 ? `<h3 class="subtitulo">Monitores do Healthchecks.io</h3><ul class="monitores">${rows.join("")}</ul>` : "<p>O projeto não tem nenhum monitor.</p>");
+  } else {
+    parts.push(notice(snapshot.healthchecks, "os monitores"));
+  }
+
+  return section("estado", "Estado", "Últimos dias", parts.join("\n"));
+}
+
+// ---------------------------------------------------------------------------------------------
+// Cost
+
+function stat(label: string, value: string, detail = ""): string {
+  return `<div class="cartao"><p class="cartao-rotulo">${e(label)}</p><p class="cartao-valor">${value}</p>${detail ? `<p class="cartao-detalhe">${detail}</p>` : ""}</div>`;
+}
+
+function barsList(caption: string, rows: CostTotals[], label: (key: string) => string): string {
+  if (rows.length === 0) return "";
+  const max = Math.max(...rows.map((row) => row.usd), 0);
+  const items = rows.map((row) => {
+    const width = max > 0 ? Math.max(2, (row.usd / max) * 100) : 0;
+    const flag = row.priced ? "" : ` ${pill("sem preço", "warn", "modelo fora de MODEL_PRICES: custo subestimado")}`;
+    const tokens = `${compact.format(row.inputTokens)} entrada · ${compact.format(row.outputTokens)} saída${row.webSearchCalls ? ` · ${formatInt(row.webSearchCalls)} buscas` : ""}`;
+    return `<li><div class="barra-topo"><span>${e(label(row.key))}${flag}</span><span class="num">${e(formatUsd(row.usd))}</span></div><div class="barra"><span style="width:${width.toFixed(1)}%"></span></div><p class="barra-detalhe">${e(tokens)} · ${formatInt(row.calls)} chamada(s)</p></li>`;
+  });
+  return `<div class="coluna"><h3 class="subtitulo">${e(caption)}</h3><ul class="barras">${items.join("")}</ul></div>`;
+}
+
+function dailyChart(cost: CostSummary): string {
+  const days = [...cost.days].reverse();
+  if (days.length === 0) return "";
+  const max = Math.max(...days.map((day) => day.usd ?? 0), 0);
+  const cols = days
+    .map((day) => {
+      const title = `${formatDay(day.date)}: ${day.usd === null ? "sem relatório" : formatUsd(day.usd)}`;
+      if (day.usd === null) return `<span class="coluna-dia coluna-dia--vazia" title="${e(title)}"></span>`;
+      const height = max > 0 ? Math.max(3, (day.usd / max) * 100) : 3;
+      return `<span class="coluna-dia" title="${e(title)}"><span style="height:${height.toFixed(1)}%"></span></span>`;
+    })
+    .join("");
+  return `<div class="grafico" role="img" aria-label="${e(`Custo por dia; o maior foi ${formatUsd(max)}`)}">
+<div class="grafico-colunas">${cols}</div>
+<div class="eixo"><span>${e(formatDay(days[0].date, shortDay))}</span><span>maior dia: ${e(formatUsd(max))}</span><span>hoje</span></div>
+</div>`;
 }
 
 function costSection(snapshot: HealthSnapshot, cost: CostSummary | null): string {
-  if (snapshot.github.state !== "ok" || !cost) return section("custo", "Custo da OpenAI", notice(snapshot.github, "o custo"));
+  if (snapshot.github.state !== "ok" || !cost) return section("custo", "OpenAI", "Custo", notice(snapshot.github, "o custo"));
+  const month = monthName.format(new Date(`${cost.month}-15T12:00:00Z`));
+  const priciest = cost.priciest;
+  const share = priciest && priciest.budgetUsd > 0 ? Math.min(100, (priciest.usd / priciest.budgetUsd) * 100) : 0;
+
+  const cards = [
+    stat(`Últimos ${snapshot.days} dias`, e(formatUsd(cost.windowUsd)), cost.reports > 0 ? `${formatInt(cost.reports)} corrida(s) com relatório` : "nenhuma corrida com relatório ainda"),
+    stat(`Em ${month}`, e(formatUsd(cost.monthUsd)), cost.monthUsd === null && cost.reports > 0 ? "a janela não cobre o mês inteiro" : ""),
+    stat("Por edição publicada", e(formatUsd(cost.perEditionUsd)), cost.publishedEditions > 0 ? `${formatInt(cost.publishedEditions)} edição(ões); inclui corridas que falharam` : ""),
+    stat(
+      "Corrida mais cara",
+      priciest ? githubLink(priciest.run.url, formatUsd(priciest.usd)) : DASH,
+      priciest
+        ? `<span class="teto"><span style="width:${share.toFixed(1)}%"></span></span>${e(`${Math.round(share)}% do teto de ${formatUsd(priciest.budgetUsd)}`)}`
+        : ""
+    ),
+  ].join("\n");
+
+  const body = [`<div class="cartoes">${cards}</div>`];
   if (cost.reports === 0) {
+    body.push(
+      '<p class="nota">O custo sai do relatório que cada corrida da cozinha grava (<code>run-report-N.json</code>). Corridas anteriores a ele ficam sem custo; a partir da próxima edição, os números aparecem aqui.</p>'
+    );
+  } else {
+    body.push(dailyChart(cost));
+    body.push(`<div class="colunas">${barsList("Por etapa", cost.bySteps, (key) => STEP_LABEL[key] ?? key)}${barsList("Por modelo", cost.byModels, (key) => key)}</div>`);
+    if (cost.unpricedModels.length > 0) {
+      body.push(`<p class="aviso">Modelos sem preço na tabela, contados só pelas buscas: ${cost.unpricedModels.map((model) => `<code>${e(model)}</code>`).join(", ")}.</p>`);
+    }
+    body.push(
+      '<p class="nota">Estimativa da cozinha: tokens de cada etapa vezes a tabela de <code>backend/src/edition/cost.ts</code>, mais US$ 0,01 por busca na web. Tokens em cache não têm desconto aqui, então o valor tende a ficar um pouco acima do cobrado. Para conferir, compare o total do mês com a página Usage da OpenAI.</p>'
+    );
+  }
+  return section("custo", "OpenAI", "Custo", body.join("\n"));
+}
+
+// ---------------------------------------------------------------------------------------------
+// Edition quality
+
+function qualitySection(runs: GithubRun[] | null): string {
+  if (!runs) return "";
+  const rows: Array<{ date: string; job: RunReportJob }> = [];
+  const seen = new Set<string>();
+  for (const run of runs) {
+    for (const report of [...run.reports].reverse()) {
+      for (const job of report.jobs) {
+        if (job.kind !== "edition" || !job.quality || !job.editionId || seen.has(job.editionId)) continue;
+        seen.add(job.editionId);
+        rows.push({ date: report.finishedAt, job });
+      }
+    }
+  }
+  if (rows.length === 0) {
     return section(
-      "custo",
-      "Custo da OpenAI",
-      "<p>Nenhuma corrida da janela tem relatório de custo ainda. Ele sai de cada corrida da cozinha a partir da versão do <code>publicar.yml</code> que grava o artefato <code>run-report-N.json</code>.</p>"
+      "qualidade",
+      "Edição",
+      "Qualidade",
+      '<p class="nota">Quantos itens entraram, quantos feeds falharam e quanto a auditoria cortou aparecem aqui a partir da próxima edição publicada: os relatórios anteriores não traziam esses números.</p>'
     );
   }
-  const notes = [
-    "<p class=\"nota\">Estimativa: tokens de cada etapa vezes a tabela de preços de <code>backend/src/edition/cost.ts</code>, mais US$ 0,01 por busca na web. Tokens em cache não têm o desconto aqui, então o valor tende a ficar um pouco acima do cobrado.</p>",
-  ];
-  if (cost.unpricedModels.length > 0) {
-    notes.push(
-      `<p class="aviso"><span class="warn">Modelos sem preço na tabela, contados só pelas buscas:</span> ${cost.unpricedModels.map((model) => `<code>${e(model)}</code>`).join(", ")}.</p>`
-    );
-  }
+  const table_ = table(
+    "Cada edição escrita na janela, da mais nova à mais antiga",
+    ["Edição", "Itens", "Com resumo", "Feeds com falha", "Auditoria cortou", "Checagem cortou", "Manchete", "Notas das etapas"],
+    rows.map(({ date, job }) => {
+      const q = job.quality!;
+      const notes = q.stepNotes.map((id) => NOTE_LABEL[id] ?? id.replace(/^pulso-/, ""));
+      return [
+        `${e(formatWhen(date))}${q.kind === "quiet" ? ` ${pill("vazia", "warn")}` : ""}`,
+        e(formatInt(q.items)),
+        e(formatInt(q.withSummary)),
+        q.feedsFailed > 0 ? pill(formatInt(q.feedsFailed), "warn") : "0",
+        q.audited === null ? DASH : e(`${formatInt(q.auditRemoved)} de ${formatInt(q.audited)}`),
+        e(formatInt(q.gateDropped)),
+        q.headlineFellBack ? pill("títulos das fontes", "warn", "o texto gerado não passou na checagem") : pill("gerada", "ok"),
+        notes.length > 0 ? e(notes.join(", ")) : DASH,
+      ];
+    }),
+    [1, 2, 3, 4, 5]
+  );
   return section(
-    "custo",
-    "Custo da OpenAI",
-    [
-      ...notes,
-      table("Por etapa", ["Etapa", "Chamadas", "Tokens de entrada", "Tokens de saída", "Buscas", "Custo"], totalsRows(cost.bySteps, true), [1, 2, 3, 4, 5]),
-      table("Por modelo", ["Modelo", "Chamadas", "Tokens de entrada", "Tokens de saída", "Custo"], totalsRows(cost.byModels, false), [1, 2, 3, 4]),
-    ].join("\n")
+    "qualidade",
+    "Edição",
+    "Qualidade",
+    `${table_}\n<p class="nota">“Notas das etapas” são os avisos que a própria cozinha registrou na edição (auditoria, custo, classificação); o texto de cada um está no log da corrida.</p>`
   );
 }
 
-function daysSection(cost: CostSummary | null): string {
-  if (!cost) return "";
-  const rows = cost.days.map((day) => [
-    e(formatDay(day.date)),
-    day.runs === 0 ? tag("0", "bad", "nenhuma corrida neste dia") : e(formatInt(day.runs)),
-    day.edition ? tag(...OUTCOME_LABEL[day.edition]) : DASH,
-    e(formatUsd(day.usd)),
-  ]);
-  if (rows.length === 0) return "";
-  return section(
-    "dias",
-    "Dia a dia",
-    `${table("Desde a primeira corrida da janela, em Brasília", ["Dia", "Corridas", "Edição", "Custo"], rows, [1, 3])}\n<p class="nota">“—” quer dizer sem relatório naquele dia, não gasto zero.</p>`
-  );
+// ---------------------------------------------------------------------------------------------
+// Runs
+
+/** A run worth a row of its own: it failed, wrote something, spent money, or is still going. */
+function notable(run: GithubRun): boolean {
+  if (run.status !== "completed") return true;
+  // A push to main with no kitchen job is skipped by design; it says nothing about the edition.
+  if (run.conclusion === "skipped") return false;
+  if (run.conclusion !== "success") return true;
+  const report = run.reports.at(-1);
+  if (!report) return false;
+  if (report.outcome === "failed" || report.catalogue === "captured" || report.catalogue === "failed") return true;
+  if (report.cost.totalUsd > 0) return true;
+  return report.jobs.some((job) => job.status === "published" || job.status === "partial" || (job.status === "error" && job.skippedReason !== "slot-already-published"));
 }
 
-function runsSection(snapshot: HealthSnapshot, cost: CostSummary | null): string {
-  if (snapshot.github.state !== "ok") return section("corridas", "Corridas", notice(snapshot.github, "as corridas do GitHub Actions"));
-  const { runs, repo, workflow } = snapshot.github.data;
-  if (runs.length === 0) return section("corridas", "Corridas", `<p>Nenhuma corrida de <code>${e(workflow)}</code> nos últimos ${snapshot.days} dias.</p>`);
-  const rows = runs.map((run) => {
-    const duration =
-      run.status === "completed" && run.startedAt ? formatDuration(Date.parse(run.updatedAt) - Date.parse(run.startedAt)) : DASH;
+function runRows(runs: GithubRun[]): string[][] {
+  return runs.map((run) => {
+    const duration = run.status === "completed" && run.startedAt ? formatDuration(Date.parse(run.updatedAt) - Date.parse(run.startedAt)) : DASH;
     const usd = run.reports.length > 0 ? run.reports.reduce((sum, report) => sum + report.cost.totalUsd, 0) : null;
     return [
       githubLink(run.url, formatWhen(run.createdAt)),
-      e(EVENT_LABEL[run.event] ?? run.event) + (run.attempt > 1 ? ` ${tag(`tentativa ${run.attempt}`, "muted")}` : ""),
+      e(EVENT_LABEL[run.event] ?? run.event) + (run.attempt > 1 ? ` <span class="muted">tentativa ${run.attempt}</span>` : ""),
       runResult(run),
       e(duration),
       kitchenSummary(run),
       e(formatUsd(usd)),
     ];
   });
-  const missing =
-    cost && cost.runsWithoutReport > 0
-      ? `<p class="nota">${formatInt(cost.runsWithoutReport)} corrida(s) concluída(s) sem relatório: anteriores a ele, ou sem cozinha (push na main, pedido de “site”).</p>`
-      : "";
-  return section(
-    "corridas",
-    "Corridas",
-    `${table(`${workflow} em ${repo}, da mais nova à mais antiga (horário de Brasília)`, ["Quando", "Origem", "Resultado", "Duração", "Cozinha", "Custo"], rows, [3, 5])}\n${missing}\n<p class="nota">“Disparo” inclui o Worker e os pedidos manuais. O resultado é o da corrida inteira: cozinha, site, deploy e conferência do site no ar.</p>`
-  );
 }
 
-function monitorsSection(snapshot: HealthSnapshot): string {
-  if (snapshot.healthchecks.state !== "ok") return section("monitores", "Monitores (Healthchecks.io)", notice(snapshot.healthchecks, "os monitores"));
-  const { checks } = snapshot.healthchecks.data;
-  if (checks.length === 0) return section("monitores", "Monitores (Healthchecks.io)", "<p>O projeto não tem nenhum monitor.</p>");
-  const rows = checks.map((check) => {
-    const [label, tone] = MONITOR_STATUS[check.status] ?? [check.status, ""];
-    return [
-      e(check.name),
-      tag(label, tone),
-      e(formatWhen(check.lastPing)),
-      e(formatWhen(check.nextPing)),
-      e(formatDuration(check.graceSeconds * 1000)),
-      e(check.schedule ?? DASH),
-    ];
-  });
-  return section(
-    "monitores",
-    "Monitores (Healthchecks.io)",
-    table("Estado agora (horário de Brasília)", ["Monitor", "Estado", "Último ping", "Próximo esperado", "Carência", "Agenda"], rows)
-  );
-}
-
-function cronClock(cron: string): string {
-  const match = /^(\d{1,2})\s+(\d{1,2})\s/.exec(cron.trim());
-  if (!match) return cron;
-  return clock.format(new Date(Date.UTC(2026, 0, 1, Number(match[2]), Number(match[1]))));
-}
-
-function workerSection(snapshot: HealthSnapshot): string {
-  const title = "Disparador (Worker da Cloudflare)";
-  if (snapshot.cloudflare.state !== "ok") return section("disparador", title, notice(snapshot.cloudflare, "os disparos do Worker"));
-  const { slots, unmatched, worker, limit, from } = snapshot.cloudflare.data;
-  const limitNote = limit
-    ? `<p class="nota">A Cloudflare só devolveu os disparos a partir de ${e(formatWhen(from))}; o plano não guarda os mais antigos.</p>`
-    : "";
-  if (slots.length === 0) {
-    return section("disparador", title, `<p>Nenhum horário diário do <code>${e(worker)}</code> caiu na janela.</p>`);
+function runsSection(snapshot: HealthSnapshot): string {
+  if (snapshot.github.state !== "ok") return section("corridas", "GitHub Actions", "Corridas", notice(snapshot.github, "as corridas do GitHub Actions"));
+  const { runs, repo, workflow } = snapshot.github.data;
+  if (runs.length === 0) return section("corridas", "GitHub Actions", "Corridas", `<p>Nenhuma corrida de <code>${e(workflow)}</code> nos últimos ${snapshot.days} dias.</p>`);
+  const head = ["Quando", "Origem", "Resultado", "Duração", "Cozinha", "Custo"];
+  const main = runs.filter(notable);
+  const rest = runs.filter((run) => !notable(run));
+  const parts = [
+    main.length > 0
+      ? table(`As que publicaram, gastaram ou falharam em ${repo} (horário de Brasília)`, head, runRows(main), [3, 5])
+      : `<p class="nota">Nenhuma corrida da janela publicou, gastou ou falhou.</p>`,
+  ];
+  if (rest.length > 0) {
+    parts.push(
+      `<details class="mais"><summary>Mais ${formatInt(rest.length)} corrida(s) sem nada novo: a edição já tinha saído, push na main sem cozinha, ou anteriores ao relatório</summary>${table(`Demais corridas de ${workflow}`, head, runRows(rest), [3, 5])}</details>`
+    );
   }
-  const crons = [...new Set(slots.map((slot) => slot.cron))].sort((a, b) => cronClock(a).localeCompare(cronClock(b)));
-  const byDay = new Map<string, Map<string, CronSlot>>();
-  for (const slot of slots) {
-    const day = new Intl.DateTimeFormat("en-CA", { timeZone: TIMEZONE }).format(new Date(slot.scheduledAt));
-    const row = byDay.get(day) ?? new Map<string, CronSlot>();
-    row.set(slot.cron, slot);
-    byDay.set(day, row);
-  }
-  const rows = [...byDay.keys()]
-    .sort()
+  parts.push('<p class="nota">“Disparo” inclui o Worker e os pedidos manuais. O resultado é o da corrida inteira: cozinha, site, deploy e conferência do site no ar.</p>');
+  return section("corridas", "GitHub Actions", "Corridas", parts.join("\n"));
+}
+
+function workerDetail(snapshot: HealthSnapshot): string {
+  if (snapshot.cloudflare.state !== "ok") return "";
+  const { slots, worker, unmatched } = snapshot.cloudflare.data;
+  const bad = slots.filter((slot) => slot.state === "failed" || slot.state === "missing");
+  if (bad.length === 0 && unmatched.length === 0) return "";
+  const rows = bad
     .reverse()
-    // Days from before the Worker existed say nothing; leave them out rather than fill rows with dashes.
-    .filter((day) => [...(byDay.get(day)?.values() ?? [])].some((slot) => slot.state !== "before"))
-    .map((day) => [
-      e(formatDay(day)),
-      ...crons.map((cron) => {
-        const slot = byDay.get(day)?.get(cron);
-        if (!slot) return DASH;
-        const [label, tone, why] = SLOT_LABEL[slot.state];
-        return tag(label, tone, slot.status && slot.state === "failed" ? `${why} (${slot.status})` : why);
-      }),
+    .map((slot) => [
+      e(formatWhen(slot.scheduledAt)),
+      slot.state === "failed" ? pill("falhou", "bad", slot.status) : pill("sem disparo", "bad"),
+      e(slot.state === "failed" ? "o pedido ao GitHub falhou nas três tentativas" : "a Cloudflare não disparou o cron"),
     ]);
   const extra =
     unmatched.length > 0
       ? `<p class="nota">Mais ${formatInt(unmatched.length)} invocação(ões) fora dos horários do <code>wrangler.jsonc</code> (disparo manual pelo painel da Cloudflare, ou um cron antigo).</p>`
       : "";
-  return section(
-    "disparador",
-    title,
-    `${table(`${worker}: cada horário do cron, em Brasília`, ["Dia", ...crons.map(cronClock)], rows)}\n${extra}\n${limitNote}\n<p class="nota">“Faltou”: a Cloudflare não disparou o cron. “Falhou”: o pedido ao GitHub falhou nas três tentativas. Um horário só conta depois de 15 minutos.</p>`
-  );
+  return section("disparador", "Cloudflare", `Disparos perdidos do ${worker}`, `${table("Horários do cron que não viraram corrida", ["Horário", "Estado", "O que quer dizer"], rows)}${extra}`);
 }
 
+// ---------------------------------------------------------------------------------------------
+// Page
+
 const CSS = `
-:root { color-scheme: light dark; --fg: #1f2328; --muted: #59636e; --line: #d1d9e0; --bg: #ffffff; --soft: #f6f8fa;
-  --ok: #1a7f37; --warn: #9a6700; --bad: #b42318; }
-@media (prefers-color-scheme: dark) { :root { --fg: #e6edf3; --muted: #9198a1; --line: #3d444d; --bg: #0d1117; --soft: #151b23;
-  --ok: #4ac26b; --warn: #d29922; --bad: #ff7b72; } }
-* { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
-main { max-width: 72rem; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
-h1 { font-size: 1.6rem; margin: 0 0 .25rem; }
-h2 { font-size: 1.15rem; margin: 2.5rem 0 .75rem; padding-bottom: .35rem; border-bottom: 1px solid var(--line); }
-header p, .nota { color: var(--muted); }
-.nota { font-size: .9rem; }
-.aviso { background: var(--soft); border: 1px solid var(--line); border-radius: 6px; padding: .6rem .8rem; }
-.resumo { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: .75rem; margin: 0; }
-.resumo div { background: var(--soft); border: 1px solid var(--line); border-radius: 6px; padding: .7rem .9rem; }
-.resumo dt { color: var(--muted); font-size: .85rem; }
-.resumo dd { margin: .15rem 0 0; font-size: 1.1rem; font-weight: 600; }
-table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-variant-numeric: tabular-nums; }
-caption { text-align: left; font-weight: 600; padding-bottom: .4rem; }
-th, td { text-align: left; padding: .35rem .6rem; border-bottom: 1px solid var(--line); vertical-align: top; }
-thead th { color: var(--muted); font-weight: 600; font-size: .85rem; }
+:root { color-scheme: light; --canvas: #fbf7f2; --ink: #17120f; --muted: #6b625b; --card: rgba(255,253,250,.86);
+  --line: rgba(23,18,15,.1); --line-strong: rgba(23,18,15,.24); --casca: rgba(23,18,15,.025); --casca-linha: rgba(23,18,15,.07);
+  --shadow: 0 14px 34px rgba(92,58,44,.12); --highlight: inset 0 1px 0 rgba(255,255,255,.75);
+  --background: radial-gradient(ellipse 70% 45% at 88% 0%, rgba(236,143,110,.1), transparent 70%), linear-gradient(180deg,#fbf7f2 0%,#fbf7f2 62%,#f5e2d6 100%);
+  --luz: linear-gradient(150deg,#f0b35a 0%,#ec8f6e 45%,#d97f8c 75%,#b07a9e 100%);
+  --ok: #3f6b4e; --ok-fundo: rgba(63,107,78,.1); --warn: #9a5a12; --warn-fundo: rgba(240,179,90,.18); --bad: #b23a26; --bad-fundo: rgba(236,143,110,.18);
+  --serif: "Playfair Display", Georgia, "Times New Roman", serif; --sans: "IBM Plex Sans", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace; }
+@media (prefers-color-scheme: dark) { :root { color-scheme: dark; --canvas: #110d0b; --ink: #f4ede6; --muted: #a69c94; --card: rgba(22,17,14,.86);
+  --line: rgba(244,237,230,.1); --line-strong: rgba(244,237,230,.24); --casca: rgba(244,237,230,.035); --casca-linha: rgba(244,237,230,.09);
+  --shadow: 0 14px 34px rgba(0,0,0,.35); --highlight: inset 0 1px 0 rgba(255,255,255,.06);
+  --background: radial-gradient(ellipse 70% 45% at 88% 0%, rgba(236,143,110,.12), transparent 70%), #110d0b;
+  --ok: #8fbf98; --ok-fundo: rgba(143,191,152,.12); --warn: #f0b35a; --warn-fundo: rgba(240,179,90,.14); --bad: #ec8f6e; --bad-fundo: rgba(236,143,110,.16); } }
+* { box-sizing: border-box; border-color: var(--line); }
+html { background: var(--canvas); }
+body { margin: 0; min-height: 100vh; background: var(--background); color: var(--ink); font: 1rem/1.6 var(--sans); -webkit-font-smoothing: antialiased; }
+main { max-width: 68rem; margin: 0 auto; padding: 3.5rem 1.25rem 5rem; }
+a { color: var(--ink); text-decoration: underline; text-decoration-color: var(--line-strong); text-decoration-thickness: 1px; text-underline-offset: .26em; }
+a:hover { text-decoration-color: var(--ink); }
+code { font: .85em var(--mono); background: var(--casca); border: 1px solid var(--casca-linha); padding: .05rem .35rem; border-radius: .4rem; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.kicker, .cartao-rotulo, .faixa-nome, thead th, caption, .eixo, .legenda { color: var(--muted); font-family: var(--mono); font-size: .75rem; font-weight: 500; letter-spacing: .1em; text-transform: uppercase; }
+.kicker { margin: 0 0 .75rem; }
+.titulo { margin: 0; max-width: 22ch; font: 500 clamp(2.1rem, 4.4vw, 3.25rem)/1.06 var(--serif); letter-spacing: -.035em; }
+.titulo-secao { margin: 0 0 1.25rem; font: 500 clamp(1.5rem, 2.6vw, 2rem)/1.12 var(--serif); letter-spacing: -.025em; }
+.subtitulo { margin: 1.75rem 0 .75rem; font: 600 .95rem/1.4 var(--sans); }
+.nota { color: var(--muted); font-size: .875rem; line-height: 1.6; max-width: 70ch; }
+.muted { color: var(--muted); }
+.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+.veredito { position: relative; padding: 2rem 2rem 1.5rem; border: 1px solid var(--line); border-radius: 1.5rem; background: var(--card); box-shadow: var(--shadow), var(--highlight); overflow: hidden; }
+.veredito::before { content: ""; position: absolute; inset: 0 0 auto; height: 4px; background: var(--luz); }
+.veredito--bad::before { background: var(--bad); } .veredito--warn::before { background: var(--warn); }
+.veredito-linha { display: flex; align-items: flex-start; gap: .9rem; }
+.selo { flex: none; width: .9rem; height: .9rem; margin-top: .85rem; border-radius: 999px; background: var(--muted); box-shadow: 0 0 0 .35rem var(--casca); }
+.veredito--ok .selo { background: var(--ok); box-shadow: 0 0 0 .35rem var(--ok-fundo); }
+.veredito--warn .selo { background: var(--warn); box-shadow: 0 0 0 .35rem var(--warn-fundo); }
+.veredito--bad .selo { background: var(--bad); box-shadow: 0 0 0 .35rem var(--bad-fundo); }
+.linha-fatos { display: flex; flex-wrap: wrap; gap: .35rem .75rem; margin: 1rem 0 0 1.8rem; color: var(--ink); font-family: var(--mono); font-size: .8125rem; letter-spacing: .04em; }
+.linha-fatos > * + *::before { content: ""; display: inline-block; width: 1px; height: .8em; margin-right: .75rem; background: var(--line-strong); vertical-align: -.05em; }
+.pendencias { list-style: none; margin: 1.25rem 0 0 1.8rem; padding: 0; display: grid; gap: .5rem; }
+.pendencia { display: flex; gap: .6rem; align-items: baseline; font-size: .95rem; }
+.ponto { flex: none; width: .5rem; height: .5rem; border-radius: 999px; transform: translateY(-.1rem); }
+.pendencia--warn .ponto { background: var(--warn); } .pendencia--bad .ponto { background: var(--bad); }
+.veredito .nota { margin: 1.25rem 0 0 1.8rem; }
+
+.bloco { margin-top: 3.5rem; padding-top: 2rem; border-top: 1px solid var(--line); }
+.aviso { padding: .75rem 1rem; border: 1px solid var(--casca-linha); border-radius: .9rem; background: var(--casca); }
+.aviso--bad strong { color: var(--bad); }
+
+.faixa { margin-bottom: 1.25rem; }
+.faixa-topo { display: flex; justify-content: space-between; gap: 1rem; margin-bottom: .45rem; }
+.faixa-nome { color: var(--ink); }
+.faixa-resumo { color: var(--muted); font-size: .875rem; }
+.dias { display: flex; gap: 3px; }
+.dia { display: inline-block; flex: 1 1 0; min-width: 4px; height: 2.25rem; border-radius: 3px; background: var(--casca-linha); }
+.dia--ok { background: var(--ok); } .dia--warn { background: var(--warn); } .dia--bad { background: var(--bad); }
+.dia--idle { background: var(--line-strong); }
+.eixo { display: flex; justify-content: space-between; letter-spacing: .06em; margin-top: -.5rem; }
+.legenda { display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; margin: 1rem 0 0; letter-spacing: .06em; }
+.legenda > span { display: inline-flex; align-items: center; gap: .4rem; }
+.legenda .dia { flex: none; width: .7rem; height: .7rem; }
+.monitores { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: 1rem; background: var(--card); }
+.monitor { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; padding: .85rem 1.1rem; }
+.monitor + .monitor { border-top: 1px solid var(--line); }
+.monitor-nome { font-weight: 600; min-width: 10rem; }
+.monitor-meta { margin-left: auto; color: var(--muted); font-family: var(--mono); font-size: .75rem; letter-spacing: .04em; }
+
+.pill { display: inline-flex; align-items: center; padding: .05rem .55rem; border: 1px solid var(--line-strong); border-radius: 999px; font-family: var(--mono); font-size: .72rem; letter-spacing: .04em; white-space: nowrap; }
+.pill--ok { color: var(--ok); border-color: transparent; background: var(--ok-fundo); }
+.pill--warn { color: var(--warn); border-color: transparent; background: var(--warn-fundo); }
+.pill--bad { color: var(--bad); border-color: transparent; background: var(--bad-fundo); font-weight: 600; }
+.pill--muted { color: var(--muted); }
+
+.cartoes { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: .75rem; }
+.cartao { padding: 1.1rem 1.25rem; border: 1px solid var(--line); border-radius: 1.1rem; background: var(--card); box-shadow: var(--highlight); }
+.cartao-rotulo { margin: 0; }
+.cartao-valor { margin: .35rem 0 0; font: 500 1.9rem/1.1 var(--serif); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.cartao-valor a { text-decoration-color: var(--line-strong); }
+.cartao-detalhe { margin: .5rem 0 0; color: var(--muted); font-size: .8125rem; }
+.teto { display: block; height: 5px; margin: .1rem 0 .4rem; border-radius: 999px; background: var(--casca-linha); overflow: hidden; }
+.teto > span { display: block; height: 100%; background: var(--luz); }
+
+.grafico { margin-top: 1.5rem; padding: 1.25rem 1.25rem 1rem; border: 1px solid var(--line); border-radius: 1.1rem; background: var(--card); }
+.grafico-colunas { display: flex; align-items: flex-end; gap: 4px; height: 8rem; margin-bottom: 1.1rem; }
+.coluna-dia { flex: 1 1 0; height: 100%; display: flex; align-items: flex-end; }
+.coluna-dia > span { display: block; width: 100%; border-radius: 3px 3px 1px 1px; background: var(--luz); }
+.coluna-dia--vazia { border-bottom: 2px dotted var(--line-strong); }
+.grafico .eixo { margin-top: 0; }
+
+.colunas { display: grid; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); gap: 0 2.5rem; }
+.barras { list-style: none; margin: 0; padding: 0; display: grid; gap: .9rem; }
+.barra-topo { display: flex; justify-content: space-between; gap: 1rem; font-size: .95rem; }
+.barra { height: 6px; margin-top: .35rem; border-radius: 999px; background: var(--casca-linha); overflow: hidden; }
+.barra > span { display: block; height: 100%; border-radius: 999px; background: var(--ink); opacity: .78; }
+.barra-detalhe { margin: .3rem 0 0; color: var(--muted); font-family: var(--mono); font-size: .72rem; letter-spacing: .03em; }
+
+.tabela { overflow-x: auto; border: 1px solid var(--line); border-radius: 1rem; background: var(--card); margin: 1rem 0; }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; font-size: .925rem; }
+caption { text-align: left; padding: .9rem 1rem .5rem; }
+th, td { text-align: left; padding: .6rem 1rem; border-top: 1px solid var(--line); vertical-align: middle; }
+thead th { border-top: 0; font-size: .7rem; }
 tbody th { font-weight: 400; white-space: nowrap; }
-.num { text-align: right; white-space: nowrap; }
-code { font-size: .9em; background: var(--soft); padding: .05rem .3rem; border-radius: 4px; }
-a { color: inherit; }
-.ok { color: var(--ok); } .warn { color: var(--warn); } .bad { color: var(--bad); font-weight: 600; } .muted { color: var(--muted); }
+.mais { margin-top: .5rem; }
+.mais summary { cursor: pointer; color: var(--muted); font-size: .9rem; }
+.mais summary:hover { color: var(--ink); }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; border-radius: 4px; }
+@media (max-width: 640px) { .veredito { padding: 1.5rem 1.25rem 1.25rem; } .linha-fatos, .pendencias, .veredito .nota { margin-left: 0; } .monitor-meta { margin-left: 0; } }
 `;
 
-export function renderHealthPage(snapshot: HealthSnapshot): string {
-  const cost =
-    snapshot.github.state === "ok"
-      ? summarizeCost(snapshot.github.data.runs, { since: new Date(snapshot.since), now: new Date(snapshot.generatedAt) })
-      : null;
-  const repo = snapshot.github.state === "ok" ? ` · ${e(snapshot.github.data.repo)}` : "";
+export function renderHealthPage(snapshot: HealthSnapshot, options: { fontCss?: string } = {}): string {
+  const now = new Date(snapshot.generatedAt);
+  const runs = snapshot.github.state === "ok" ? snapshot.github.data.runs : null;
+  const cost = runs ? summarizeCost(runs, { since: new Date(snapshot.since), now }) : null;
+  const repo = snapshot.github.state === "ok" ? snapshot.github.data.repo : "";
+  const v = verdict({ runs, healthchecks: snapshot.healthchecks, cloudflare: snapshot.cloudflare, now });
 
   return `<!doctype html>
 <html lang="pt-BR">
@@ -438,21 +594,17 @@ export function renderHealthPage(snapshot: HealthSnapshot): string {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="${PAGE_CSP}">
 <meta name="referrer" content="no-referrer">
-<title>Painel do Pulso</title>
-<style>${CSS}</style>
+<title>${e(`Painel do Pulso · ${VERDICT_MARK[v.level]}`)}</title>
+<style>${options.fontCss ?? ""}${CSS}</style>
 </head>
 <body>
 <main>
-<header>
-<h1>Painel do Pulso</h1>
-<p>Gerado em ${e(formatWhen(snapshot.generatedAt, fullDateTime))}, horário de Brasília · últimos ${snapshot.days} dias${repo}. Para atualizar, rode <code>npm run health</code> de novo.</p>
-</header>
-${summarySection(snapshot, cost)}
+${verdictBlock(v, snapshot, repo)}
+${statusSection(snapshot, runs)}
 ${costSection(snapshot, cost)}
-${daysSection(cost)}
-${runsSection(snapshot, cost)}
-${monitorsSection(snapshot)}
-${workerSection(snapshot)}
+${qualitySection(runs)}
+${workerDetail(snapshot)}
+${runsSection(snapshot)}
 </main>
 </body>
 </html>
