@@ -106,12 +106,27 @@ jobs:
           MODELOS: ${{ inputs.tarefa == 'modelos' }}
           FORCAR: ${{ inputs.forcar == true }}
           INICIAR: ${{ inputs.iniciar == true }}
+          # Tokens e US$ por etapa desta corrida, gravados mesmo quando ela falha (runReport.ts).
+          PULSO_RUN_REPORT: ${{ runner.temp }}/run-report-${{ github.run_attempt }}.json
         run: |
           args=()
           if [ "$MODELOS" = "true" ]; then args+=(--catalogue); fi
           if [ "$FORCAR" = "true" ]; then args+=(--force); fi
           if [ "$INICIAR" = "true" ]; then args+=(--init); fi
           npm run kitchen -- "${args[@]}"
+
+      # O relatório fica 90 dias como artefato, para o painel local (npm run health). Num
+      # repositório público, qualquer conta logada no GitHub baixa um artefato, como já lê o log:
+      # por isso ele só leva números, etapas, modelos e status, nunca texto de erro. Um arquivo
+      # por tentativa, para "Re-run" não esbarrar no nome de um artefato que já existe.
+      - name: Guardar o relatório da corrida
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          path: ${{ runner.temp }}/run-report-${{ github.run_attempt }}.json
+          archive: false
+          retention-days: 90
+          if-no-files-found: ignore
 
       # Nada novo para publicar, mas o site mostra mesmo a edição que a cozinha tem? Se a corrida
       # anterior caiu entre a cozinha e o deploy, esta é a que republica.

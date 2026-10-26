@@ -163,6 +163,19 @@ O job `site` do CI (`.github/workflows/ci.yml`) monta o site a partir das ediç�
 
 O workflow de publicação roda os mesmos três portões sobre as edições reais antes de subir o site.
 
+## Painel de saúde e custo
+
+`npm run health` gera `.tmp/health/index.html`, uma página local com os últimos 30 dias (`--days` vai de 1 a 30):
+
+- **Custo da OpenAI** por etapa, por modelo, por dia e por corrida, o custo por edição publicada e a corrida mais cara diante do teto `PULSO_MAX_EDITION_USD`. É a estimativa da própria cozinha (tokens vezes `backend/src/edition/cost.ts`), não a fatura: tokens em cache não têm o desconto, então ela tende a ficar um pouco acima do cobrado.
+- **Corridas** do `publicar.yml`: origem, resultado, duração e o que a cozinha fez.
+- **Monitores** do Healthchecks.io, no estado de agora.
+- **Disparador**: cada horário do cron do Worker, com o que a Cloudflare não disparou e o que falhou ao pedir a corrida ao GitHub.
+
+O custo vem de um relatório que cada corrida da cozinha grava, inclusive a que falha ou não publica nada, e que o workflow guarda 90 dias como artefato `run-report-N.json` (`backend/src/kitchen/runReport.ts`). Num repositório público, qualquer conta logada no GitHub baixa esse artefato, como já lê o log; por isso ele só leva números, etapas, modelos e status, sem texto de erro.
+
+As credenciais ficam em `.env.health`, que o git ignora (modelo em `.env.health.example`), e são todas só de leitura: um token do GitHub (ou o do `gh`), a chave read-only do Healthchecks e um token da Cloudflare com Account Analytics: Read. Uma fonte sem credencial aparece como "não configurado" e não impede as outras. A página não tem script nem carrega nada de fora, e não há servidor: ela é aberta do disco.
+
 ## Medição de audiência
 
 O Pulso usa a mesma propriedade GA4 do `dorly.com.br`. Não há personalização: a capa não muda por visitante. A página de metodologia declara isso.
