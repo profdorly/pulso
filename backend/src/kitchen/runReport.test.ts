@@ -91,6 +91,18 @@ describe("buildRunReport", () => {
   });
 });
 
+describe("quality", () => {
+  it("carries the edition's numbers, and reads a report written before they existed", () => {
+    const quality = { kind: "regular" as const, items: 9, withSummary: 8, feedsFailed: 1, stepNotes: ["pulso-audit"], audited: 8, auditRemoved: 1, gateDropped: 0, headlineFellBack: false };
+    const report = buildRunReport({ startedAt, finishedAt, mode: "daily", jobs: [{ kind: "edition", result: edition({ quality }) }], daily, budgetUsd: 4 });
+    expect(report.jobs[0].quality).toEqual(quality);
+
+    const before = buildRunReport({ startedAt, finishedAt, mode: "daily", jobs: [{ kind: "edition", result: edition() }], daily, budgetUsd: 4 });
+    expect(before.jobs[0]).not.toHaveProperty("quality");
+    expect(runReportSchema.safeParse(before).success).toBe(true);
+  });
+});
+
 describe("recordJobs", () => {
   it("keeps every result with its kind", async () => {
     const jobs: RecordedJob[] = [];

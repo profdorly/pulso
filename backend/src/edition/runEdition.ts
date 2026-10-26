@@ -403,6 +403,8 @@ async function runEditionLocked(
   input: RunEditionInput & { now: Date; store: EditionStore; ledger: CostLedger }
 ): Promise<EditionJobResult> {
   const { slot, repositories, store, now, ledger } = input;
+  /** What the fidelity audit did, for the run report; null when it did not run. */
+  let auditStats: { audited: number; removed: number } | null = null;
   const force = input.force === true;
   const env = input.env ?? {};
   const fetchers = input.fetchers ?? {};
@@ -676,6 +678,18 @@ async function runEditionLocked(
       newItemCount: input.items.length,
       costUsdApprox: edition.costUsdApprox,
       revision,
+      quality: {
+        kind: input.kind,
+        items: input.items.length,
+        withSummary: input.items.filter((item) => item.summaryPt).length,
+        // Feed failures are named by source; the pipeline's own notes carry the "pulso-" prefix.
+        feedsFailed: sourceFailures.filter((failure) => !failure.sourceId.startsWith("pulso-")).length,
+        stepNotes: [...new Set(sourceFailures.filter((failure) => failure.sourceId.startsWith("pulso-")).map((failure) => failure.sourceId))],
+        audited: auditStats?.audited ?? null,
+        auditRemoved: auditStats?.removed ?? null,
+        gateDropped: input.gate.bulletsDropped + input.gate.blurbsDropped,
+        headlineFellBack: input.gate.headlineFellBack,
+      },
     };
   }
 
@@ -1170,6 +1184,7 @@ async function runEditionLocked(
       });
       keptItems = audit.items;
       ledger.record("audit", audit.model, audit.usage);
+      auditStats = { audited: audit.audited, removed: audit.removed };
 
       // The judge should not review its own writing. The item copy it audits is written by the
       // worker and, for the items the humanizer flagged, revised by the editorial model; judging

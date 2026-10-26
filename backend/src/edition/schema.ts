@@ -207,6 +207,22 @@ export type PulsoIndex = z.infer<typeof pulsoIndexSchema>;
 
 export type EditionJobStatus = "published" | "unchanged" | "partial" | "error";
 
+export interface EditionQuality {
+  kind: "regular" | "quiet";
+  items: number;
+  /** Items that kept their Portuguese paragraph after every check. */
+  withSummary: number;
+  feedsFailed: number;
+  /** sourceIds of the pipeline's own notes (pulso-audit, pulso-cost...), without their text. */
+  stepNotes: string[];
+  /** Paragraphs the fidelity audit checked and removed; null when the audit did not run. */
+  audited: number | null;
+  auditRemoved: number | null;
+  /** Bullets and blurbs the final number/claim gate dropped. */
+  gateDropped: number;
+  headlineFellBack: boolean;
+}
+
 export type CostBreakdownRow = PulsoEdition["costBreakdown"][number];
 
 export interface EditionJobResult {
@@ -219,6 +235,8 @@ export interface EditionJobResult {
    * The edition artifact keeps it only when an edition is written; the run report keeps it always.
    */
   costBreakdown?: CostBreakdownRow[];
+  /** What a written edition carries, in numbers only; absent when nothing was written. */
+  quality?: EditionQuality;
   revision?: number;
   skippedReason?: "no-delta" | "slot-already-published" | "locked";
   error?: string;

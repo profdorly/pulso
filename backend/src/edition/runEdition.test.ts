@@ -686,6 +686,8 @@ describe("runEdition", () => {
     expect(edition?.items[0]?.title).toBe("Wired on the launch");
     // The paragraphs are billed like any other model step.
     expect(edition?.costBreakdown.some((row) => row.step === "summarize")).toBe(true);
+    // The run report gets the edition's numbers, without any text.
+    expect(result.quality).toMatchObject({ kind: "regular", items: 1, withSummary: 1, feedsFailed: 0, audited: 1, auditRemoved: 0, headlineFellBack: false });
   });
 
   it("reports what was already spent when a later step throws", async () => {
