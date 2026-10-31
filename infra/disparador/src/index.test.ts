@@ -53,7 +53,7 @@ describe("scheduled", () => {
     const calls = fake({ edition: "2026-10-31-manha" });
     await run();
     assert.equal(dispatched(calls).length, 0);
-    assert.ok(!calls.some((call) => call.url.includes("api.github.com")), "não deve nem consultar o GitHub");
+    assert.ok(!calls.some((call) => new URL(call.url).hostname === "api.github.com"), "não deve nem consultar o GitHub");
   });
 
   it("dispatches when the site cannot be read", async () => {
