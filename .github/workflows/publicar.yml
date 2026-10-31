@@ -8,12 +8,17 @@
 # devolvida com escrita condicional: uma execução que perde a corrida falha em vez de apagar a
 # outra, e uma que falha não muda nada.
 #
-# Até cinco corridas por dia: os crons de reserva do GitHub às 07:27 e às 17:10 e os disparos do
-# Worker (infra/disparador) às 07:32, 09:05 e 17:15. A primeira que chega faz o trabalho; as outras
-# só refazem o que ela não terminou — a edição, se não saiu; o site, se não mostra a edição — e de
-# resto não fazem nada. As da tarde fazem o papel do `pulso-site-tarde` da AWS: um dia em que a
-# manhã falhou é retomado no mesmo dia. O GitHub atrasa e às vezes descarta execuções agendadas;
-# o Worker não depende desse agendador.
+# Uma corrida por dia, num dia normal. O Worker (infra/disparador) dispara às 07:32, 09:05 e 17:15,
+# mas antes olha o site no ar e só dispara se a capa ainda não mostra a edição de hoje: a das 07:32
+# faz o trabalho, e as outras são tentativas de verdade, que só rodam se a edição não saiu. O cron
+# do GitHub das 17:10 é a rede final para um dia em que o Worker falhar inteiro; ele chega horas
+# atrasado (por volta das 20h), o que para essa função não importa, e faz a mesma conferência
+# antes de rodar a cozinha (job `precisa`).
+#
+# Sem fila única entre corridas. Em 29/10/2026 uma corrida ficou presa no GitHub antes do primeiro
+# job e, como todas andavam numa fila (`concurrency.queue: max`), segurou as seguintes: 30/10 ficou
+# sem edição. A fila protegia contra duas cozinhas gravando ao mesmo tempo, o que a escrita
+# condicional no R2 já impede. Agora uma corrida presa custa só o próprio horário.
 #
 # Ambiente `production` (Settings → Environments), restrito ao branch main:
 #   segredos  OPENAI_API_KEY, ARTIFICIAL_ANALYSIS_API_KEY, R2_ACCOUNT_ID,
@@ -28,12 +33,9 @@
 name: Publicar
 
 on:
-  # Quem dispara de fato é o Worker da Cloudflare (infra/disparador), às 07:32, 09:05 e 17:15,
-  # com tarefa=edicao. Estes crons são só reserva, de graça: se eles e o Worker rodarem no mesmo
-  # dia, a cozinha vê que a edição já saiu e só confere o site no ar.
+  # Quem dispara de fato é o Worker da Cloudflare (infra/disparador). Este cron é só a rede final.
   schedule:
-    - cron: "27 10 * * *" # 07:27 em Brasília
-    - cron: "10 20 * * *" # 17:10 em Brasília, reserva do disparo das 17:15
+    - cron: "10 20 * * *" # 17:10 em Brasília; na prática o GitHub o entrega por volta das 20h
   push:
     branches: [main]
   workflow_dispatch:
@@ -51,30 +53,44 @@ on:
         description: "Começar uma cozinha vazia (só na primeira corrida de um fork)"
         type: boolean
         default: false
-      fila:
-        description: "Fila de desvio (o Worker preenche quando uma corrida fica presa; deixe vazio)"
-        type: string
-        default: ""
 
 permissions: {}
 
-# Uma publicação por vez, em fila. `queue: max` mantém todas as que chegam esperando a vez; sem
-# ele, o GitHub guarda só uma pendente e cancela a anterior quando chega outra.
-# O nome da fila tem duas válvulas porque o GitHub às vezes deixa uma corrida presa em "waiting"
-# antes do primeiro job, segurando a vez para sempre e sem aceitar cancelamento (aconteceu em
-# 29/10/2026 e custou a edição de 30/10). Uma fila nova deixa a corrida fantasma sozinha na antiga:
-#   - `inputs.fila`: o Worker (infra/disparador) vê a corrida presa e dispara numa fila de desvio;
-#   - `vars.PULSO_FILA`: à mão, vale para tudo, inclusive os crons e o push:
-#     gh variable set PULSO_FILA --body <número seguinte>
-concurrency:
-  group: publicar-${{ inputs.fila || vars.PULSO_FILA || '1' }}
-  queue: max
-
 jobs:
+  # Só no cron: a edição de hoje já está no ar? Sem ambiente nem segredos, então não passa pela
+  # checagem do `production`, que é onde a corrida de 29/10 travou. Disparos à mão e do Worker
+  # (que já conferiu) seguem direto.
+  precisa:
+    if: vars.PULSO_PUBLICAR == 'true' && github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      rodar: ${{ steps.check.outputs.rodar }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            scripts
+            frontend/src/lib/siteBase.ts
+      - name: Conferir se a edição de hoje já está no ar
+        id: check
+        run: |
+          edition="$(TZ=America/Sao_Paulo date +%F)-manha"
+          if node scripts/site-live.mjs --edition "$edition"; then
+            echo "rodar=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "rodar=true" >> "$GITHUB_OUTPUT"
+          fi
+
   cozinha:
+    needs: precisa
     if: >-
-      vars.PULSO_PUBLICAR == 'true' && github.ref == 'refs/heads/main' &&
-      (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.tarefa != 'site'))
+      !cancelled() && vars.PULSO_PUBLICAR == 'true' && github.ref == 'refs/heads/main' &&
+      ((github.event_name == 'schedule' && needs.precisa.outputs.rodar == 'true') ||
+       (github.event_name == 'workflow_dispatch' && inputs.tarefa != 'site'))
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: production
@@ -153,10 +169,12 @@ jobs:
 
   site:
     needs: cozinha
-    # Sem cozinha (push na main, pedido de "site"), o site é refeito com o que já está publicado.
+    # Sem cozinha (push na main, pedido de "site"), o site é refeito com o que já está publicado. O
+    # cron que achou a edição no ar (job `precisa`) também pula a cozinha, e aí não há o que refazer.
     if: >-
       !cancelled() && vars.PULSO_PUBLICAR == 'true' && github.ref == 'refs/heads/main' &&
-      (needs.cozinha.result == 'skipped' ||
+      ((needs.cozinha.result == 'skipped' &&
+        (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.tarefa == 'site'))) ||
        (needs.cozinha.result == 'success' && needs.cozinha.outputs.publish == 'true'))
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -193,6 +211,9 @@ jobs:
         with:
           path: dist-site
 
+  # Sem `concurrency`: uma trava aqui deixaria um deploy preso segurar todos os seguintes, que é o
+  # problema de 29/10 em outro lugar. Dois deploys ao mesmo tempo são raros (o Worker só dispara sem
+  # edição no ar) e o pior caso é o segundo falhar, com aviso ao Healthchecks; o primeiro já publicou.
   deploy:
     needs: site
     if: ${{ !cancelled() && needs.site.result == 'success' }}
@@ -258,7 +279,7 @@ jobs:
         run: curl -fsS -m 10 --retry 3 -o /dev/null "$HEALTHCHECKS_MODELOS_URL" || true
 
       # Também nas execuções disparadas pelo Worker: são elas que garantem a atividade se o cron
-      # de reserva nunca rodar.
+      # do GitHub nunca rodar.
       - name: Manter o agendamento ativo
         if: always()
         env:

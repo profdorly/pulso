@@ -1,31 +1,23 @@
-// Roda com: node --test --experimental-strip-types infra/disparador/src/index.test.ts
-// Sem dependências: o fetch do GitHub é trocado por um falso que responde como a API.
+// Roda com: node --test infra/disparador/src/index.test.ts
+// Sem dependências: o fetch do site e do GitHub é trocado por um falso.
 import assert from "node:assert/strict";
 import { afterEach, describe, it } from "node:test";
-import worker, { unstick } from "./index.ts";
+import worker, { todayEditionId } from "./index.ts";
 
-const NOW = Date.parse("2026-10-30T23:00:00Z");
 const env = { GITHUB_TOKEN: "token-de-teste" };
 const realFetch = globalThis.fetch;
+// 10:32 UTC = 07:32 em Brasília, 31/10/2026.
+const MORNING = Date.parse("2026-10-31T10:32:00Z");
 
-interface Run {
-  id: number;
-  status: string;
-  created_at: string;
-}
-
-function fakeGithub(runs: Run[], options: { cancelRefused?: number[] } = {}) {
+function fake(site: { status?: number; edition?: string | null; throws?: boolean }) {
   const calls: Array<{ method: string; url: string; body?: string }> = [];
   globalThis.fetch = (async (input: string | URL, init: RequestInit = {}) => {
     const url = String(input);
-    const method = init.method ?? "GET";
-    calls.push({ method, url, ...(typeof init.body === "string" ? { body: init.body } : {}) });
-    const listed = /\/runs\?status=(\w+)/.exec(url)?.[1];
-    if (listed) return Response.json({ workflow_runs: runs.filter((run) => run.status === listed) });
-    const cancelled = /\/runs\/(\d+)\/cancel$/.exec(url)?.[1];
-    if (cancelled) {
-      const refused = options.cancelRefused?.includes(Number(cancelled));
-      return new Response(refused ? '{"message":"Cannot cancel a workflow run that is completed"}' : "", { status: refused ? 409 : 202 });
+    calls.push({ method: init.method ?? "GET", url, ...(typeof init.body === "string" ? { body: init.body } : {}) });
+    if (url.startsWith("https://pulso.dorly.com.br/")) {
+      if (site.throws) throw new TypeError("network down");
+      const meta = site.edition ? `<meta name="pulso:edition" content="${site.edition}" />` : "";
+      return new Response(`<html><head>${meta}</head></html>`, { status: site.status ?? 200 });
     }
     if (url.endsWith("/dispatches")) return new Response(null, { status: 204 });
     if (url.endsWith("/publicar.yml")) return Response.json({ state: "active" });
@@ -34,68 +26,49 @@ function fakeGithub(runs: Run[], options: { cancelRefused?: number[] } = {}) {
   return calls;
 }
 
-const ago = (minutes: number) => new Date(NOW - minutes * 60_000).toISOString();
+const dispatched = (calls: ReturnType<typeof fake>) => calls.filter((call) => call.url.endsWith("/dispatches"));
+const run = (time = MORNING) => worker.scheduled({ cron: "32 10 * * *", scheduledTime: time }, env);
 
 afterEach(() => {
   globalThis.fetch = realFetch;
 });
 
-describe("unstick", () => {
-  it("leaves a healthy queue alone", async () => {
-    const calls = fakeGithub([{ id: 1, status: "waiting", created_at: ago(1) }]);
-    assert.equal(await unstick(env, NOW), undefined);
-    assert.equal(calls.filter((call) => call.method === "POST").length, 0);
-  });
-
-  it("cancels a stuck run and keeps the normal queue when GitHub accepts", async () => {
-    const calls = fakeGithub([
-      { id: 10, status: "waiting", created_at: ago(300) },
-      { id: 11, status: "pending", created_at: ago(200) },
-      { id: 12, status: "pending", created_at: ago(5) },
-    ]);
-    assert.equal(await unstick(env, NOW), undefined);
-    const cancelled = calls.filter((call) => call.url.endsWith("/cancel")).map((call) => call.url.split("/").at(-2));
-    assert.deepEqual(cancelled, ["10", "11"]);
-  });
-
-  it("detours to a queue of its own when the stuck run refuses to cancel", async () => {
-    fakeGithub([{ id: 40947370626, status: "waiting", created_at: ago(1800) }], { cancelRefused: [40947370626] });
-    assert.equal(await unstick(env, NOW), "desvio-40947370626");
-  });
-
-  it("does not cancel runs that wait behind one that is working", async () => {
-    const calls = fakeGithub(
-      [
-        { id: 20, status: "waiting", created_at: ago(90) },
-        { id: 21, status: "in_progress", created_at: ago(50) },
-        { id: 22, status: "pending", created_at: ago(45) },
-      ],
-      { cancelRefused: [20] }
-    );
-    await unstick(env, NOW);
-    assert.ok(!calls.some((call) => call.url.endsWith("/22/cancel")));
-  });
-
-  it("dispatches on the normal queue if GitHub cannot be read", async () => {
-    globalThis.fetch = (async () => new Response("erro", { status: 502 })) as typeof fetch;
-    assert.equal(await unstick(env, NOW), undefined);
+describe("todayEditionId", () => {
+  it("uses the day in Brasília, not in UTC", () => {
+    assert.equal(todayEditionId(MORNING), "2026-10-31-manha");
+    // 01:00 UTC on the 1st is still the 31st in Brasília.
+    assert.equal(todayEditionId(Date.parse("2026-11-01T01:00:00Z")), "2026-10-31-manha");
   });
 });
 
 describe("scheduled", () => {
-  it("sends the detour queue with the dispatch", async () => {
-    const calls = fakeGithub([{ id: 7, status: "waiting", created_at: new Date(Date.now() - 600 * 60_000).toISOString() }], {
-      cancelRefused: [7],
-    });
-    await worker.scheduled({ cron: "32 10 * * *", scheduledTime: Date.now() }, env);
-    const sent = calls.find((call) => call.url.endsWith("/dispatches"));
-    assert.deepEqual(JSON.parse(sent?.body ?? "{}"), { ref: "main", inputs: { tarefa: "edicao", fila: "desvio-7" } });
+  it("dispatches when the site still shows yesterday", async () => {
+    const calls = fake({ edition: "2026-10-30-manha" });
+    await run();
+    assert.equal(dispatched(calls).length, 1);
+    assert.deepEqual(JSON.parse(dispatched(calls)[0]!.body ?? "{}"), { ref: "main", inputs: { tarefa: "edicao" } });
   });
 
-  it("dispatches as before when nothing is stuck", async () => {
-    const calls = fakeGithub([]);
-    await worker.scheduled({ cron: "32 10 * * *", scheduledTime: Date.now() }, env);
-    const sent = calls.find((call) => call.url.endsWith("/dispatches"));
-    assert.deepEqual(JSON.parse(sent?.body ?? "{}"), { ref: "main", inputs: { tarefa: "edicao" } });
+  it("does nothing when today's edition is already live", async () => {
+    const calls = fake({ edition: "2026-10-31-manha" });
+    await run();
+    assert.equal(dispatched(calls).length, 0);
+    assert.ok(!calls.some((call) => new URL(call.url).hostname === "api.github.com"), "não deve nem consultar o GitHub");
+  });
+
+  it("dispatches when the site cannot be read", async () => {
+    for (const site of [{ throws: true }, { status: 503 }, { edition: null }]) {
+      const calls = fake(site);
+      await run();
+      assert.equal(dispatched(calls).length, 1, JSON.stringify(site));
+    }
+  });
+
+  it("fails loudly when GitHub refuses the dispatch", async () => {
+    fake({ edition: "2026-10-30-manha" });
+    const refusing = globalThis.fetch;
+    globalThis.fetch = (async (input: string | URL, init?: RequestInit) =>
+      String(input).endsWith("/dispatches") ? new Response("Bad credentials", { status: 401 }) : refusing(input, init)) as typeof fetch;
+    await assert.rejects(run(), /não foi disparado/);
   });
 });

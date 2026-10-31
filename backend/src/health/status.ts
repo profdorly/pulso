@@ -129,6 +129,7 @@ export function statusLanes(input: {
 const usd = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const clock = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
 const STUCK_AFTER_MS = 40 * 60_000;
+const STUCK_SHOWN_MS = 48 * 3_600_000;
 
 export function verdict(input: {
   runs: GithubRun[] | null;
@@ -162,15 +163,17 @@ export function verdict(input: {
     return { level: "unknown", headline: "Sem dados do GitHub para dizer como está a edição de hoje.", facts, issues };
   }
 
-  // Same rule as the Worker (infra/disparador): a run stays in "waiting" for seconds, so one
-  // parked there is lost by GitHub and holds the publish queue (29/10/2026, a day without edition).
+  // A run stays in "waiting" for seconds. One parked there for long was lost by GitHub (29/10/2026).
+  // Since runs no longer share a queue it holds nothing up, but it means GitHub is misbehaving.
+  // Only the last two days: a ghost run never leaves "waiting" and would otherwise show for a month.
   for (const run of input.runs) {
-    if (run.status === "waiting" && input.now.getTime() - Date.parse(run.createdAt) > STUCK_AFTER_MS) {
+    const age = input.now.getTime() - Date.parse(run.createdAt);
+    if (run.status === "waiting" && age > STUCK_AFTER_MS && age < STUCK_SHOWN_MS) {
       issues.push({
-        level: "bad",
+        level: "warn",
         text:
-          `A corrida #${run.number} está presa no GitHub desde ${clock.format(new Date(run.createdAt))} de ${brt(run.createdAt).split("-").reverse().slice(0, 2).join("/")} ` +
-          "e segura a fila. O próximo disparo do Worker desvia dela; para destravar já: gh variable set PULSO_FILA --body <número seguinte>.",
+          `A corrida #${run.number} ficou presa no GitHub desde ${clock.format(new Date(run.createdAt))} de ${brt(run.createdAt).split("-").reverse().slice(0, 2).join("/")}. ` +
+          "Ela não segura as outras; o próximo horário do Worker tenta de novo se a edição não saiu.",
       });
     }
   }

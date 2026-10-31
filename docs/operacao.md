@@ -4,21 +4,21 @@ Agendamento, monitoramento e o que fazer para o jornal não parar sozinho. O por
 
 ## Agendamento
 
-Até cinco corridas de `publicar.yml` por dia. Um Worker da Cloudflare, de graça e sem rota, dispara às 07:32, às 09:05 e às 17:15 (Brasília). O cron do próprio GitHub atrasa horas e às vezes descarta execuções, então fica de reserva às 07:27 e às 17:10.
+Uma corrida de `publicar.yml` por dia, num dia normal. Um Worker da Cloudflare, de graça e sem rota, acorda às 07:32, às 09:05 e às 17:15 (Brasília) e, antes de disparar, olha o site no ar: se a capa já mostra a edição de hoje (o `<meta name="pulso:edition">` da home), não dispara nada. A das 07:32 faz o trabalho; as outras só rodam se a edição não saiu. O cron do próprio GitHub, às 17:10, é a rede final para um dia em que o Worker falhar inteiro: ele chega horas atrasado, por volta das 20h, e faz a mesma conferência antes de rodar a cozinha.
 
-A primeira corrida que chega faz o trabalho. As outras baixam a cozinha, veem que a edição do dia existe e refazem só o que faltou: a edição, se não saiu; o site, se o site no ar não mostra a edição (o home leva um `<meta name="pulso:edition">`). De resto não gastam nada. As da tarde retomam no mesmo dia uma manhã que falhou. As execuções entram numa fila (`concurrency.queue: max`) e nenhuma cancela outra.
+Por que assim: nos primeiros dez dias, o cron do GitHub chegou de 2h20 a 6h30 atrasado e nunca salvou uma edição, e quatro das cinco corridas diárias só conferiam o site. Cada corrida passa pelas checagens do GitHub, e foi numa delas que a de 29/10 travou. Menos corridas, menos exposição.
+
+As corridas não andam mais em fila. Duas cozinhas ao mesmo tempo continuam seguras: a cozinha grava no R2 com escrita condicional, e a que chega depois falha sem apagar nada. Uma corrida que falha não muda nada.
 
 O GitHub desliga o agendamento de um repositório depois de 60 dias sem commit. A própria corrida reativa o agendamento, e o Worker religa um workflow que o GitHub já tenha desligado por isso.
 
 ### Corrida presa
 
-Às vezes o GitHub perde uma corrida antes do primeiro job: ela fica em "waiting" para sempre, não aceita cancelamento e, como as corridas andam em fila, segura todas as outras. Foi o que aconteceu em 29/10/2026, às 17:15, e por isso não houve edição em 30/10. O limite de tempo dos jobs não pega esse caso, porque o job nunca começa.
+Às vezes o GitHub perde uma corrida antes do primeiro job: ela fica em "waiting" para sempre e não aceita cancelamento. Em 29/10/2026, às 17:15, uma corrida assim segurou a fila única que existia na época, e 30/10 ficou sem edição. Sem a fila, uma corrida presa perde só o próprio horário: se a edição de hoje não está no ar, o horário seguinte do Worker dispara de novo. No pior caso, a edição sai às 09:05 ou às 17:15.
 
-O que existe para isso:
+O painel (`npm run health`) avisa quando vê uma corrida presa nos últimos dois dias. Não é preciso fazer nada. Se a edição do dia ainda não saiu e você não quer esperar o próximo horário: `gh workflow run publicar.yml -f tarefa=edicao`.
 
-- **O Worker desvia sozinho.** Antes de cada disparo, ele procura corrida em "waiting" há mais de 40 minutos. Tenta cancelar. Se o GitHub recusar, dispara numa fila de desvio (`desvio-<id da corrida presa>`), e a edição sai no horário seguinte do Worker. Também cancela as corridas paradas atrás da presa.
-- **O painel mostra.** `npm run health` dá vermelho com "corrida #N está presa no GitHub".
-- **À mão, na hora:** `gh variable set PULSO_FILA --body 2` (ou o número seguinte ao atual). Isso troca a fila de tudo, inclusive dos crons de reserva e do push, e a corrida presa fica sozinha na fila antiga. Depois, `gh workflow run publicar.yml -f tarefa=edicao` se a edição do dia ainda não saiu.
+O que isto não cobre: o GitHub Actions fora do ar o dia inteiro. Aí só o alerta abaixo e uma corrida à mão, quando ele voltar.
 
 ## Monitoramento
 
