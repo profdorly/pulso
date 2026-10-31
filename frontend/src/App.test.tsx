@@ -284,6 +284,7 @@ describe("Pulso reader", () => {
     expect(sections).toEqual([
       ["Capa", "/"],
       ["Arquivo", "/arquivo/"],
+      ["Semana", "/semana/"],
       ["Modelos", "/modelos/"],
       ["Metodologia", "/metodologia/"],
     ]);

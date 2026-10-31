@@ -52,6 +52,7 @@ function routesToAudit() {
   const routes = [
     { label: "capa", file: "index.html" },
     { label: "arquivo", file: path.join("arquivo", "index.html") },
+    { label: "semana", file: path.join("semana", "index.html") },
     { label: "modelos", file: path.join("modelos", "index.html") },
     { label: "metodologia", file: path.join("metodologia", "index.html") },
     { label: "404", file: "404.html" },

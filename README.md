@@ -1,44 +1,83 @@
 # Pulso
 
-Jornal diário de inteligência artificial em português, montado por um programa e publicado sem revisão humana no meio — por isso cada regra de seleção, escrita e checagem está no código, com teste. No ar em **[pulso.dorly.com.br](https://pulso.dorly.com.br/)**.
+[![CI](https://github.com/profdorly/pulso/actions/workflows/ci.yml/badge.svg)](https://github.com/profdorly/pulso/actions/workflows/ci.yml)
+[![Licença: Apache 2.0](https://img.shields.io/badge/licen%C3%A7a-Apache%202.0-blue)](LICENSE)
+· [English](README.en.md)
 
-*A daily AI news journal in Brazilian Portuguese, written and fact-checked by a pipeline of models and deterministic gates, published as a static site. Runs entirely on GitHub Actions, GitHub Pages and a Cloudflare R2 bucket; the only paid part is the OpenAI API (about US$ 0.35 an edition).*
+Jornal diário de inteligência artificial em português, montado por um programa e publicado sem revisão humana no meio. Por isso cada regra de seleção, escrita e checagem está no código, com teste. No ar em **[pulso.dorly.com.br](https://pulso.dorly.com.br/)**.
 
-## O que ele faz
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/capa-escuro.webp">
+  <img src="docs/img/capa-claro.webp" alt="Capa do Pulso #106, de 24 de outubro de 2026: manchete sobre a OpenAI cortar a internet no treinamento de modelos de ponta, com o ranking de modelos ao lado.">
+</picture>
+
+## Por que existe
+
+Notícia de IA sai primeiro lá fora, e o veículo brasileiro que traduz leva dias, quando traduz. O Pulso lê as fontes direto e entrega o resumo em português todo dia às 07:30. Como não há editor revisando antes de publicar, a regra editorial não pode depender do bom senso de ninguém: ela está escrita no código, e o teste diz se ela ainda vale.
+
+## O que tem no site
+
+- **Capa e edição do dia**: o resumo da manhã, as prioridades e o radar, separado em imprensa e anúncios direto dos labs. O título de cada item leva à fonte; o resumo em português abre na própria edição.
+- **[Arquivo](https://pulso.dorly.com.br/arquivo/)** de todas as edições, cada uma com uma capa 16:9 desenhada pelo programa.
+- **[Modelos](https://pulso.dorly.com.br/modelos/)**: catálogo semanal com os números da Artificial Analysis. Responde qual é o mais inteligente, o mais rápido, o mais barato e quem está na fronteira de preço × inteligência.
+- **[Pulso da Semana](https://pulso.dorly.com.br/semana/)**: toda segunda-feira, a semana em IA em até cinco minutos de áudio, com transcrição e fontes. Disparado à mão, com o roteiro lido e aprovado antes de virar áudio ([docs/pulso-da-semana.md](docs/pulso-da-semana.md)).
+- **[RSS](https://pulso.dorly.com.br/feed.xml)** e **[metodologia](https://pulso.dorly.com.br/metodologia/)**, a versão para o leitor do que este README explica.
+
+<p>
+  <img src="docs/img/edicao.webp" width="49%" alt="Item da edição: veículo e região (TechCrunch, EUA), título em português, frase de resumo e o resumo de dois parágrafos aberto.">
+  <img src="docs/img/modelos.webp" width="49%" alt="Gráfico de preço por inteligência da página de modelos, com uma linha ligando os modelos da fronteira de custo-benefício, de MiMo-V2.6-Flash a Claude Opus 5.5.">
+</p>
+
+<img src="docs/img/capas.webp" alt="Capas 16:9 das edições de 21 a 24 de outubro de 2026, todas geradas pela cozinha.">
+
+## Como sai uma edição
+
+<img src="docs/img/como-funciona.png" alt="Os seis passos de uma edição (lê, escolhe, abre cada link, escreve, confere, publica) com os números da edição #106: 27 feeds, até 50 itens, 44 publicados por US$ 0,47. Embaixo, a origem das 44 notícias: EUA 15, Ásia 11, Europa 10, Brasil 8.">
 
 Todo dia por volta das 07:30 (Brasília):
 
-1. **Lê** 27 feeds de laboratórios e imprensa e busca na web o que eles não trouxeram.
-2. **Escolhe** até 50 itens com cota por região e por veículo, para que a capa não seja só do país que publica mais.
-3. **Abre cada link** e confere que a página existe, é a matéria certa e é da janela.
+1. **Lê** 27 feeds, 8 de laboratórios e 19 de imprensa dos EUA, da Europa, da Ásia e do Brasil. A janela vai da capa anterior até a corrida, umas 24 horas.
+2. **Escolhe** até 50 itens. Anúncio de lab entra sem cota, porque o anúncio é o fato. A imprensa divide as vagas por região, com no máximo três itens por veículo. Quando a seleção era por recência, a capa saía inteiramente brasileira: veículo daqui publica mais e mais perto da hora da corrida.
+3. **Abre cada link** e confere que a página existe, é a matéria certa e saiu dentro da janela.
 4. **Escreve** título, frase e resumo em português a partir do texto da página, não da manchete.
-5. **Confere** o texto duas vezes: um gate determinístico casa número, preço, porcentagem e versão de modelo com a página; um modelo auditor diferente do que escreveu procura o resto (atribuição, tempo verbal, exagero) e derruba só o trecho que não se sustenta.
-6. **Publica** a edição, a capa e o feed RSS. Às segundas, antes da edição, atualiza o [catálogo de modelos](https://pulso.dorly.com.br/modelos/) com os números da Artificial Analysis.
+5. **Confere** o texto duas vezes, como mostra a próxima seção.
+6. **Publica** a edição, a capa e o feed RSS. Às segundas, antes da edição, atualiza o catálogo de modelos.
 
-O porquê de cada regra está em [docs/como-funciona.md](docs/como-funciona.md); a versão para o leitor, na [metodologia](https://pulso.dorly.com.br/metodologia/); as medições, em [research/](research/).
+Uma busca na web por região roda em teste ao lado dos feeds: ela registra o que traria de novo, sem publicar nada ainda.
+
+O porquê de cada regra está em [docs/como-funciona.md](docs/como-funciona.md); as medições que embasam as decisões, em [research/](research/).
+
+## O que é conferido, e o que não é
+
+<img src="docs/img/checagem.png" alt="Exemplo de checagem com um caso de teste: a frase diz 40 dólares onde a matéria diz 4 e o gate determinístico a derruba; o resumo diz que o modelo foi lançado onde a matéria fala em lista de espera, e o auditor o derruba. O item continua com título e link.">
+
+- **Sem modelo**, um gate casa dinheiro, porcentagem, número preciso e versão de modelo com a página. Frase ou resumo com número que a página não sustenta sai. Manchete ou abertura da capa sem suporte voltam a um texto montado só com os títulos das fontes. O gate não custa nada e não tem como ser convencido do contrário.
+- **Com um modelo diferente do que escreveu**, o auditor procura o resto: fala atribuída à pessoa errada, "planeja lançar" virando "lançou", exagero. Ele dá um veredito por item, cita o trecho exato e derruba só o campo onde o trecho está. Revisão é uma só, nunca um laço, e volta pelo gate antes de ser aceita. Veredito ilegível derruba todo o texto gerado do item.
+- **Não é conferido**: prosa, enquadramento e juízo editorial. Checar tudo custaria outra passada de modelo por item e rejeitaria muito mais do que pegaria.
+- **Quando nada sobrevive**, a capa de ontem fica se tiver menos de 36 horas. Se for mais velha, sai uma edição silenciosa que diz o que foi checado e por que nada entrou.
+- **Teto de gasto**: US$ 4 por corrida. Se a auditoria for pulada por custo, os resumos saem junto. O teto não vira atalho para publicar sem auditoria.
 
 ## Como roda
 
-```
-   Worker da Cloudflare (cron) → GitHub Actions (publicar.yml)
-  07:32 ┌──────────────┐   ┌──────────────┐   ┌──────────────┐
- ──────▶│   cozinha    │──▶│     site     │──▶│    deploy    │──▶ GitHub Pages
-        │ npm run      │   │ kitchen:     │   │ deploy-pages │    pulso.dorly.com.br
-        │ kitchen      │   │ export +     │   └──────────────┘
-        └──────┬───────┘   │ build:site   │
-               │           └──────┬───────┘
-        baixa / devolve        lê │
-               ▼                  ▼
-        ┌──────────────────────────────┐
-        │ Cloudflare R2: pulso-cozinha │  news.db (itens, snapshots e as edições),
-        │                              │  backups/ (30 dias), weekly/ (áudio)
-        └──────────────────────────────┘
+```mermaid
+flowchart LR
+    W["Worker da Cloudflare<br/>07:32 · 09:05 · 17:15"] --> A["GitHub Actions<br/>publicar.yml"]
+    G["cron do GitHub<br/>07:27 · 17:10, de reserva"] -.-> A
+    A <-->|"baixa e devolve news.db<br/>(escrita condicional)"| R[("Cloudflare R2<br/>pulso-cozinha")]
+    A -->|deploy| P["GitHub Pages<br/>pulso.dorly.com.br"]
+    A -->|"ping só se o site no ar<br/>mostra a edição"| H["Healthchecks.io"]
 ```
 
-- **Cozinha** (`backend/`): TypeScript, SQLite (`better-sqlite3`), OpenAI Responses API. O estado inteiro é um arquivo, baixado e devolvido com escrita condicional: duas corridas nunca se sobrescrevem, e uma corrida que falha não muda nada.
+- **Cozinha** (`backend/`): TypeScript, SQLite (`better-sqlite3`), OpenAI Responses API. O estado inteiro é um arquivo, baixado no começo e devolvido no fim só se ninguém mexeu nele no meio: duas corridas nunca se sobrescrevem, e uma corrida que falha não muda nada. Cada envio deixa uma cópia em `backups/`, guardada 30 dias e travada contra apagamento nos primeiros 25.
 - **Site** (`frontend/`, `scripts/`): React pré-renderizado em HTML estático. Sem JavaScript nas páginas, exceto o player do Pulso da Semana e o Google Analytics.
-- **Até cinco corridas por dia**: um Worker da Cloudflare, de graça e sem rota ([infra/disparador](infra/disparador/README.md)), dispara `publicar.yml` às 07:32, às 09:05 e às 17:15; o cron do próprio GitHub, que atrasa horas ou falha, fica de reserva às 07:27 e às 17:10. A primeira que chega faz o trabalho; as outras refazem só o que faltou (a edição, se não saiu; o site, se não mostra a edição) e de resto não gastam nada. As da tarde retomam no mesmo dia uma manhã que falhou, como fazia o `pulso-site-tarde` da AWS.
-- **Monitoramento**: o [Healthchecks.io](https://healthchecks.io/) recebe sucesso só quando o site **no ar** mostra a edição do dia, conferido depois do deploy. Sem ping em um dia, ele avisa — o que cobre corrida que falhou, deploy que falhou e agendamento que o GitHub descartou. Um segundo monitor, opcional, cobre o catálogo semanal. A própria corrida reativa o agendamento, que o GitHub desligaria após 60 dias sem commit, e o Worker religa um workflow que o GitHub já tenha desligado por isso. Configure o check da edição no modo **Cron**, expressão `30 10 * * *`, fuso UTC, tolerância de 4 h (no modo de período, um ping das 17:15 empurraria o próximo alerta para o dia seguinte à noite), com notificação por e-mail ou Telegram; e, no GitHub (Settings → Notifications → Actions), e-mail só para execuções que falham. Validade dos tokens: [infra/disparador](infra/disparador/README.md#datas-de-troca).
+- **Agendamento**: o cron do GitHub atrasa horas, então quem dispara é um Worker da Cloudflare ([infra/disparador](infra/disparador/README.md)). A primeira corrida faz o trabalho; as outras só refazem o que faltou e de resto não gastam nada.
+- **Monitoramento**: o Healthchecks.io avisa se um dia passar sem a edição no ar, seja qual for a etapa que falhou.
+
+Horários, configuração do monitor e validade dos tokens: [docs/operacao.md](docs/operacao.md).
+
+## Quanto custa
+
+Só a API da OpenAI é paga: cerca de US$ 0,50 por edição (a de 24/10/2026, com 44 itens, custou US$ 0,47). GitHub Actions, GitHub Pages, o bucket R2, o Worker, o Healthchecks e a API da Artificial Analysis ficam no plano gratuito.
 
 ## Rodar local
 
@@ -58,10 +97,10 @@ npm run build:site                  # monta dist-site/ a partir de data/editions
 npm run verify:site                 # sobe o site local e confere rotas, metadados e feeds
 ```
 
-O Pulso da Semana é gerado à mão (`backend/src/weekly/pilot.ts`, sobre as edições de `npm run kitchen:export`) e publicado com:
+O Pulso da Semana sai toda segunda, uma etapa por comando, com o roteiro aprovado por uma pessoa antes de virar áudio. O passo a passo, para pessoas e para agentes de IA, está em [docs/pulso-da-semana.md](docs/pulso-da-semana.md):
 
 ```bash
-npm run kitchen:weekly -- --from .tmp/weekly-audio-pilot/2026-W43   # envia o episódio e soma ao índice
+npm run semana -- status     # onde a semana está e qual é o próximo passo
 ```
 
 Testes e checagens, os mesmos do CI:
@@ -71,17 +110,30 @@ npm run typecheck && npm run lint && npm test
 npm run build:site && npm run verify:site && npm run budget:bundle && npm run a11y
 ```
 
+As imagens deste README saem de `npm run docs:images`: os diagramas de `docs/img/src/` e capturas do site no ar, feitas com o Chrome instalado (`--base=http://localhost:4311` para o site local).
+
 ## Publicar o seu
 
 1. Crie um bucket R2 e dois tokens restritos a ele: um de leitura e escrita (a cozinha) e um só de leitura (o site).
-2. No repositório, crie o ambiente `production` (Settings → Environments), com **Deployment branches** restrito a `main` — é isso que impede código de outro branch de ler os segredos. Segredos: `OPENAI_API_KEY`, `ARTIFICIAL_ANALYSIS_API_KEY`, `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID` e `R2_SECRET_ACCESS_KEY` (o token de escrita), `R2_READ_ACCESS_KEY_ID` e `R2_READ_SECRET_ACCESS_KEY` (o de leitura). Opcionais: `HEALTHCHECKS_URL` (modo Cron, `30 10 * * *` UTC, tolerância de 4 h) e `HEALTHCHECKS_MODELOS_URL` (7 dias, tolerância de 2 dias). Depois de criar os segredos, rode o workflow **Testar chaves**. Variáveis opcionais: `PULSO_WEB_SEARCH=shadow` e `PULSO_MAX_EDITION_USD`.
+2. No repositório, crie o ambiente `production` (Settings → Environments), com **Deployment branches** restrito a `main`. É isso que impede código de outro branch de ler os segredos. Segredos: `OPENAI_API_KEY`, `ARTIFICIAL_ANALYSIS_API_KEY`, `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID` e `R2_SECRET_ACCESS_KEY` (o token de escrita), `R2_READ_ACCESS_KEY_ID` e `R2_READ_SECRET_ACCESS_KEY` (o de leitura). Opcionais: `HEALTHCHECKS_URL` e `HEALTHCHECKS_MODELOS_URL`, configurados como em [docs/operacao.md](docs/operacao.md#monitoramento). Depois de criar os segredos, rode o workflow **Testar chaves**. Variáveis opcionais: `PULSO_WEB_SEARCH=shadow` e `PULSO_MAX_EDITION_USD`.
 3. Em Settings → Pages, escolha **GitHub Actions** como fonte.
 4. Troque a identidade do jornal (nome, domínio, logo, Analytics): a lista está em [TRADEMARKS.md](TRADEMARKS.md).
-5. Crie a variável de repositório `PULSO_PUBLICAR` com valor `true` (Settings → Secrets and variables → Actions → Variables). Sem ela, o workflow de publicação não roda nada — é o que deixa um fork inerte.
+5. Crie a variável de repositório `PULSO_PUBLICAR` com valor `true` (Settings → Secrets and variables → Actions → Variables). Sem ela, o workflow de publicação não roda nada, o que deixa um fork inerte.
 6. Rode o workflow **Publicar** à mão com `tarefa: edicao` e **iniciar** marcado. Só essa primeira corrida pode começar de uma cozinha vazia; depois disso, uma cozinha sumida é erro, não recomeço.
+7. Para não depender do cron do GitHub, suba o Worker de [infra/disparador](infra/disparador/README.md).
+
+## Glossário
+
+- **Cozinha**: o banco SQLite com os itens já vistos, os snapshots de benchmark e as edições. Mora num bucket R2 e vai e volta a cada corrida.
+- **Corrida**: uma execução do workflow `publicar.yml`.
+- **Gate de evidência**: a checagem sem modelo que casa números e versões com a página da fonte.
+- **Auditor**: o modelo que lê o texto escrito por outro e aponta o que a matéria não sustenta.
+- **Slot**: o horário da edição no código (`manha`). Hoje há um por dia.
+- **Stub**: o texto da capa montado só com os títulos das fontes, usado quando o texto gerado não passa na checagem.
+- **Edição silenciosa**: a edição que sai quando nada passou e a capa anterior tem mais de 36 horas. Diz o que foi checado em vez de deixar a home parada.
 
 ## Licença e marca
 
-Código sob [Apache License 2.0](LICENSE). Os nomes **Pulso** e **Professor Dorly**, os logos e o visual do jornal não estão incluídos na licença: veja [TRADEMARKS.md](TRADEMARKS.md). Fontes sob SIL OFL 1.1. Os dados de modelos são da [Artificial Analysis](https://artificialanalysis.ai/), sob os termos dela.
+Código sob [Apache License 2.0](LICENSE). Os nomes **Pulso** e **Professor Dorly**, os logos e o visual do jornal não estão incluídos na licença: veja [TRADEMARKS.md](TRADEMARKS.md). As imagens de `docs/img/` mostram esse visual e seguem a mesma regra. Fontes sob SIL OFL 1.1. Os dados de modelos são da [Artificial Analysis](https://artificialanalysis.ai/), sob os termos dela.
 
 Falhas de segurança: [SECURITY.md](SECURITY.md). Contribuições: [CONTRIBUTING.md](CONTRIBUTING.md).

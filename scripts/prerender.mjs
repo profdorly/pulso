@@ -38,6 +38,7 @@ const {
   methodologyMetadata,
   modelsMetadata,
   notFoundMetadata,
+  weeklyArchiveMetadata,
   absoluteUrl,
   clampDescription,
   SITE_BASE,
@@ -212,8 +213,24 @@ for (const edition of editions) {
 }
 
 /*
+ * The list of weekly episodes, always written: the masthead links it, and a week before the first
+ * episode it says so instead of answering 404. Indexable, unlike the episode pages.
+ */
+{
+  const preloadedIndex = weeklyIndex ?? { schemaVersion: 1, latestId: null, episodes: [] };
+  const meta = weeklyArchiveMetadata(preloadedIndex);
+  writeHtml("/semana/", buildHtml({ route: "/semana/", meta, preloaded: { weeklyIndex: preloadedIndex } }));
+  record(meta, weeklyEpisodes[0] ? readEpisodePublishedAt(weeklyEpisodes[0].weekId) : undefined);
+}
+
+function readEpisodePublishedAt(weekId) {
+  const episodePath = path.join(weeklyDir, weekId, "episode.json");
+  return existsSync(episodePath) ? readJson(episodePath).publishedAt : undefined;
+}
+
+/*
  * Weekly audio episodes. A document per episode so a direct link loads; noindex and out of the
- * sitemap while the weekly is a pilot. The player and transcript render in the browser.
+ * sitemap while the player and transcript render only in the browser.
  *
  * Each episode cites stories by the item address they had when it was produced. Items no longer
  * have pages, so each cited address gets a pointer to the story's original reporting.
@@ -338,7 +355,7 @@ function citationHtml(source) {
 
 process.stdout.write(
   `prerendered ${written.length} files into ${path.relative(repoRoot, siteDir)}\n` +
-    `  pages: 1 cover + ${pageCount(index.editions.length, ARCHIVE_PAGE_SIZE)} arquivo + ${catalog ? 1 : 0} modelos + 1 metodologia + ${editions.length} edition(s) + ${weeklyCount} semana + 404\n` +
+    `  pages: 1 cover + ${pageCount(index.editions.length, ARCHIVE_PAGE_SIZE)} arquivo + ${catalog ? 1 : 0} modelos + 1 metodologia + ${editions.length} edition(s) + 1 + ${weeklyCount} semana + 404\n` +
     `  weekly citations pointing at the original: ${citationCount}\n` +
     `  sitemap: ${sitemapEntries.length} indexable URLs at ${SITE_ORIGIN}${SITE_BASE}\n`
 );

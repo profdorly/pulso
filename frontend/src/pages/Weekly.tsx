@@ -488,9 +488,14 @@ export function WeeklyCard() {
           {formatWeekRange(entry.from, entry.to)} · {formatMinutes(entry.durationSeconds)} · duas vozes sintéticas
         </p>
       </div>
-      <Link to={`/semana/${entry.weekId}`} className="pulso-button pulso-button--go">
-        Ouvir o episódio
-      </Link>
+      <div className="flex flex-col items-start gap-3">
+        <Link to={`/semana/${entry.weekId}`} className="pulso-button pulso-button--go">
+          Ouvir o episódio
+        </Link>
+        <Link to="/semana/" className="pulso-action pulso-action--muted">
+          Todos os episódios
+        </Link>
+      </div>
     </section>
   );
 }

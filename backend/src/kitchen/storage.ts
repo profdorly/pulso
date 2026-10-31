@@ -187,7 +187,8 @@ export async function backupState(target: StateTarget, localPath: string, now = 
   return key;
 }
 
-async function listKeys(target: StateTarget, prefix: string): Promise<string[]> {
+/** Every key under `prefix`, following pagination. */
+export async function listKeys(target: StateTarget, prefix: string): Promise<string[]> {
   const keys: string[] = [];
   let token: string | undefined;
   do {
@@ -260,4 +261,8 @@ export async function writeObject(target: StateTarget, key: string, body: Buffer
   await target.client.send(
     new PutObjectCommand({ Bucket: target.bucket, Key: key, Body: body, ...(contentType ? { ContentType: contentType } : {}) })
   );
+}
+
+export async function deleteObject(target: StateTarget, key: string): Promise<void> {
+  await target.client.send(new DeleteObjectCommand({ Bucket: target.bucket, Key: key }));
 }

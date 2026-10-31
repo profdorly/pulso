@@ -3,7 +3,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { repoRoot } from "../edition/paths.js";
 import { argValue, hasFlag, shownPath, userPath } from "./args.js";
-import { readObject, stateTargetFromEnv, WEEKLY_PREFIX, writeObject } from "./storage.js";
+import { deleteObject, listKeys, readObject, stateTargetFromEnv, WEEKLY_PREFIX, writeObject } from "./storage.js";
 import { mergeWeeklyIndex, parseWeeklyIndex } from "./weeklyIndex.js";
 
 /**
@@ -53,7 +53,18 @@ async function main(): Promise<void> {
   const stored = storedRaw ? parseWeeklyIndex(JSON.parse(storedRaw.toString("utf8")), "índice publicado") : null;
   const merged = mergeWeeklyIndex(stored, incoming);
 
+  // A week published again (a corrected episode) leaves its old MP3 behind under a different
+  // hashed name. Nothing references it, but every site build would still ship it.
+  const uploading = new Set(files.map(({ key }) => key));
+  const stale: string[] = [];
+  for (const episode of incoming.episodes) {
+    for (const key of await listKeys(target, `${WEEKLY_PREFIX}${episode.weekId}/`)) {
+      if (!uploading.has(key)) stale.push(key);
+    }
+  }
+
   for (const { key } of files) process.stdout.write(`${dryRun ? "enviaria" : "enviando"} ${key}\n`);
+  for (const key of stale) process.stdout.write(`${dryRun ? "apagaria" : "apagando"} ${key} (versão anterior)\n`);
   process.stdout.write(`índice: ${merged.episodes.map((episode) => episode.weekId).join(", ")}\n`);
   if (dryRun) return;
 
@@ -61,6 +72,8 @@ async function main(): Promise<void> {
     await writeObject(target, key, readFileSync(file), CONTENT_TYPES[path.extname(file)]);
   }
   await writeObject(target, `${WEEKLY_PREFIX}index.json`, Buffer.from(`${JSON.stringify(merged)}\n`), "application/json");
+  // Last: until the new index is up, the site may still be pointing at the old files.
+  for (const key of stale) await deleteObject(target, key);
   process.stdout.write("semana: publicada; entra no site na próxima publicação (ou rode o workflow com tarefa: site)\n");
 }
 

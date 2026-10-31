@@ -1,6 +1,7 @@
 # Pulso da Semana em áudio
 
-**Status:** proposta para piloto, sem implementação em produção  
+**Status:** piloto concluído (W40). O produto em operação está em [docs/pulso-da-semana.md](../docs/pulso-da-semana.md). Este documento fica como registro do plano original.
+**Decisões de outubro de 2026, que substituem as deste plano:** episódio de no máximo 5 minutos publicados, gerado no ritmo natural e acelerado 1,15× na montagem (uma velocidade fixa, escolhida de ouvido; a regra "não acelerar" abaixo era contra acelerar o quanto fosse preciso para caber). Sai toda segunda, disparado à mão, com o roteiro aprovado por uma pessoa antes de gerar a voz.
 **Data:** 6 de outubro de 2026  
 **Modelo de voz:** ElevenLabs `eleven_v4`, via Text to Dialogue
 

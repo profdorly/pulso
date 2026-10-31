@@ -54,7 +54,7 @@ export const outlineSchema = z.object({
       })
     )
     .min(3)
-    .max(7),
+    .max(5),
 });
 export type Outline = z.infer<typeof outlineSchema>;
 
