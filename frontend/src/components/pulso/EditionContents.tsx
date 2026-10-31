@@ -1,5 +1,3 @@
-import { cn } from "../../lib/utils.js";
-
 export interface ContentsEntry {
   /** Element id of the section on this page. */
   id: string;
@@ -27,7 +25,7 @@ export function EditionContents({
 
   return (
     <nav
-      className={cn("pulso-contents", placement === "aside" ? "pulso-panel pulso-contents--aside" : "pulso-contents--inline")}
+      className={`pulso-contents ${placement === "aside" ? "pulso-panel pulso-contents--aside" : "pulso-contents--inline"}`}
       aria-label="Seções da edição"
     >
       <p className="pulso-kicker">Seções</p>

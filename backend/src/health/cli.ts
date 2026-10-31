@@ -21,11 +21,11 @@ import { collect, type Source } from "./source.js";
  */
 
 /** The site's own fonts (frontend/public/fonts), inlined: the page has no server to load them from. */
-const FONTS: Array<[family: string, weight: number, file: string]> = [
-  ["Playfair Display", 500, "playfair-display-500-latin.woff2"],
-  ["IBM Plex Sans", 400, "ibm-plex-sans-400-latin.woff2"],
-  ["IBM Plex Sans", 600, "ibm-plex-sans-600-latin.woff2"],
-  ["IBM Plex Mono", 500, "ibm-plex-mono-500-latin.woff2"],
+const FONTS: Array<[family: string, weight: string, file: string]> = [
+  ["Playfair Display", "500", "playfair-display-500-latin.woff2"],
+  // Variable font: one file covers both weights the panel uses.
+  ["IBM Plex Sans", "400 600", "ibm-plex-sans-latin.woff2"],
+  ["IBM Plex Mono", "500", "ibm-plex-mono-500-latin.woff2"],
 ];
 
 function fontCss(root: string): string {
