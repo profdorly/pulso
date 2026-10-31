@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Fonte do diagrama de checagem do README. O caso é sintético: a matéria é EN_LAUNCH_BODY e os
+  defeitos são number-swap-price e modality-launch, de backend/src/edition/auditorEval.ts.
+  PNG: npm run docs:images
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="2400" height="1560" viewBox="0 0 1200 780" role="img" aria-label="Exemplo de checagem: o gate derruba a frase com preço errado e o auditor derruba o resumo que transforma lista de espera em lançamento">
+  <defs>
+    <linearGradient id="brasa" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#F0B35A"/>
+      <stop offset="45%" stop-color="#EC8F6E"/>
+      <stop offset="75%" stop-color="#D97F8C"/>
+      <stop offset="100%" stop-color="#B07A9E"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="780" fill="#110D0B"/>
+  <rect width="1200" height="3" fill="url(#brasa)"/>
+
+  <g font-family="'IBM Plex Mono Medium', 'IBM Plex Mono', monospace" font-size="14" fill="#A69C94" letter-spacing="3">
+    <text x="80" y="84">PULSO · O QUE A CHECAGEM DERRUBA</text>
+    <text x="1120" y="84" text-anchor="end">CASO DE TESTE</text>
+  </g>
+  <text x="80" y="142" font-family="'Playfair Display', serif" font-size="44" fill="#F4EDE6">Duas checagens, uma depois da outra</text>
+
+  <rect x="80" y="180" width="500" height="264" rx="16" fill="#17120F" stroke="#2E2520"/>
+  <rect x="620" y="180" width="500" height="264" rx="16" fill="#17120F" stroke="#2E2520"/>
+
+  <g font-family="'IBM Plex Mono Medium', 'IBM Plex Mono', monospace">
+    <g font-size="13" fill="#A69C94" letter-spacing="2">
+      <text x="104" y="214">A MATÉRIA (EM INGLÊS)</text>
+      <text x="644" y="214">FRASE DA CAPA</text>
+      <text x="644" y="306">RESUMO</text>
+    </g>
+
+    <g font-size="15" fill="#BDB3AA">
+      <text x="104" y="250">Northwind AI said on Tuesday that it is</text>
+      <text x="104" y="276"><tspan fill="#F0B35A" text-decoration="underline">opening a waiting list</tspan> for Harbor 2, its</text>
+      <text x="104" y="302">document-processing model, and <tspan fill="#F0B35A" text-decoration="underline">plans to</tspan></text>
+      <text x="104" y="328">make the model generally available later</text>
+      <text x="104" y="354">this quarter. Pricing will start at</text>
+      <text x="104" y="380"><tspan fill="#F0B35A" text-decoration="underline">4 dollars</tspan> per million input tokens once</text>
+      <text x="104" y="406">general availability begins.</text>
+
+      <text x="644" y="242">Harbor 2 sai por <tspan fill="#EC8F6E" text-decoration="underline">40 dólares</tspan> o milhão</text>
+      <text x="644" y="266">de tokens de entrada.</text>
+
+      <text x="644" y="334">A Northwind AI <tspan fill="#D97F8C" text-decoration="underline">lançou</tspan> o Harbor 2 nesta</text>
+      <text x="644" y="360">terça-feira, com <tspan fill="#D97F8C" text-decoration="underline">disponibilidade geral</tspan></text>
+      <text x="644" y="386"><tspan fill="#D97F8C" text-decoration="underline">imediata</tspan>. O modelo processa documentos</text>
+      <text x="644" y="412">de até 300 páginas.</text>
+    </g>
+  </g>
+
+  <!-- veredito 1: gate -->
+  <circle cx="98" cy="494" r="16" fill="#EC8F6E"/>
+  <text x="98" y="499" text-anchor="middle" font-family="'IBM Plex Mono Medium', 'IBM Plex Mono', monospace" font-size="15" fill="#17120F">1</text>
+  <text x="130" y="502" font-family="'Playfair Display', serif" font-size="24" fill="#F4EDE6">Gate determinístico</text>
+  <g font-family="'IBM Plex Mono Medium', 'IBM Plex Mono', monospace" font-size="15" fill="#BDB3AA">
+    <text x="130" y="532">“40 dólares” não está na página, que diz 4. A frase sai. É comparação de texto,</text>
+    <text x="130" y="554">sem modelo: não custa nada e não há prompt que o convença do contrário.</text>
+  </g>
+
+  <!-- veredito 2: auditor -->
+  <circle cx="98" cy="604" r="16" fill="#D97F8C"/>
+  <text x="98" y="609" text-anchor="middle" font-family="'IBM Plex Mono Medium', 'IBM Plex Mono', monospace" font-size="15" fill="#17120F">2</text>
+  <text x="130" y="612" font-family="'Playfair Display', serif" font-size="24" fill="#F4EDE6">Auditor, um modelo diferente do que escreveu</text>
+  <g font-family="'IBM Plex Mono Medium', 'IBM Plex Mono', monospace" font-size="15" fill="#BDB3AA">
+    <text x="130" y="642">Lê o que sobrou. A matéria fala em lista de espera e plano; o resumo diz que já</text>
+    <text x="130" y="664">lançou. Ele cita o trecho exato e o resumo sai. O título passou e fica.</text>
+  </g>
+
+  <line x1="80" y1="698" x2="1120" y2="698" stroke="#2E2520"/>
+  <text x="80" y="730" font-family="'IBM Plex Mono Medium', 'IBM Plex Mono', monospace" font-size="15" fill="#F4EDE6">O item continua na edição, com título e link para a fonte. Nenhum erro publicado.</text>
+  <text x="80" y="756" font-family="'IBM Plex Mono Medium', 'IBM Plex Mono', monospace" font-size="12" fill="#A69C94">Caso sintético, montado com dois defeitos do corpus de teste do auditor (research/auditor-eval.md).</text>
+</svg>

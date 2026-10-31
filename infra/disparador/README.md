@@ -100,7 +100,7 @@ aparece como erro, e a invocação termina em erro se as três falharem.
   proxy da Cloudflare nesse registro.
 - O alarme humano é o check de publicação no Healthchecks (`HEALTHCHECKS_URL`): ele avisa se a
   edição do dia não sair, venha a falha do Worker, do GitHub ou da cozinha. Confira que ele notifica
-  por e-mail ou Telegram (configuração no README da raiz, seção de monitoramento).
+  por e-mail ou Telegram (configuração em [docs/operacao.md](../../docs/operacao.md#monitoramento)).
 
 ## Datas de troca
 

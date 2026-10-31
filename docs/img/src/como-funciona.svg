@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Fonte do diagrama do README. Os números são da edição #106 (24/10/2026, 07:32): 44 itens,
+  27 resumos, US$ 0,47, e as datelines da página da edição. Ao trocar a edição de referência,
+  troque os números aqui e a legenda no README. PNG: npm run docs:images
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="2400" height="1840" viewBox="0 0 1200 920" role="img" aria-label="Os seis passos de uma edição do Pulso, com os números da edição 106">
+  <defs>
+    <linearGradient id="brasa" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#F0B35A"/>
+      <stop offset="45%" stop-color="#EC8F6E"/>
+      <stop offset="75%" stop-color="#D97F8C"/>
+      <stop offset="100%" stop-color="#B07A9E"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="920" fill="#110D0B"/>
+  <rect width="1200" height="3" fill="url(#brasa)"/>
+
+  <g font-family="'IBM Plex Mono Medium', 'IBM Plex Mono', monospace" font-size="14" fill="#A69C94" letter-spacing="3">
+    <text x="80" y="84">PULSO · COMO SAI UMA EDIÇÃO</text>
+    <text x="1120" y="84" text-anchor="end">EDIÇÃO #106 · 24 OUT 2026</text>
+  </g>
+  <text x="80" y="142" font-family="'Playfair Display', serif" font-size="44" fill="#F4EDE6">Do feed à capa, sem editor no meio</text>
+
+  <line x1="104" y1="222" x2="104" y2="682" stroke="#3A2F28" stroke-width="2"/>
+
+  <g font-family="'IBM Plex Mono Medium', 'IBM Plex Mono', monospace">
+    <!-- círculos numerados -->
+    <g fill="#110D0B" stroke="url(#brasa)" stroke-width="2">
+      <circle cx="104" cy="222" r="18"/>
+      <circle cx="104" cy="314" r="18"/>
+      <circle cx="104" cy="406" r="18"/>
+      <circle cx="104" cy="498" r="18"/>
+      <circle cx="104" cy="590" r="18"/>
+      <circle cx="104" cy="682" r="18"/>
+    </g>
+    <g font-size="15" fill="#F4EDE6" text-anchor="middle">
+      <text x="104" y="227">1</text>
+      <text x="104" y="319">2</text>
+      <text x="104" y="411">3</text>
+      <text x="104" y="503">4</text>
+      <text x="104" y="595">5</text>
+      <text x="104" y="687">6</text>
+    </g>
+
+    <!-- métricas à direita -->
+    <g font-size="15" fill="#EC8F6E" text-anchor="end" letter-spacing="1">
+      <text x="1120" y="230">27 FEEDS · ~24 H</text>
+      <text x="1120" y="322">ATÉ 50 ITENS</text>
+      <text x="1120" y="414">1 VISITA POR ITEM</text>
+      <text x="1120" y="506">GPT-6 LUNA</text>
+      <text x="1120" y="598">GATE + GPT-6.1 SOL</text>
+      <text x="1120" y="690">44 ITENS · US$ 0,47</text>
+    </g>
+
+    <!-- descrições -->
+    <g font-size="15" fill="#BDB3AA">
+      <text x="144" y="256">8 feeds de laboratórios e 19 de imprensa, dos EUA, da Europa, da Ásia e do Brasil.</text>
+      <text x="144" y="278">A janela vai da capa anterior até a corrida.</text>
+
+      <text x="144" y="348">Anúncio de lab entra direto. A imprensa divide as vagas por região, com no máximo</text>
+      <text x="144" y="370">3 itens por veículo, para a capa não ficar com quem publica mais.</text>
+
+      <text x="144" y="440">A página existe, é a matéria certa, saiu dentro da janela? 404, homepage e</text>
+      <text x="144" y="462">título trocado saem da edição.</text>
+
+      <text x="144" y="532">Título, frase e resumo em português a partir do texto da página, não da manchete.</text>
+      <text x="144" y="554">Devolver vazio é aceito: melhor que preencher com suposição.</text>
+
+      <text x="144" y="624">Primeiro um gate sem modelo casa número, preço, % e versão com a página. Depois</text>
+      <text x="144" y="646">outro modelo procura o resto e derruba só o campo que não se sustenta.</text>
+
+      <text x="144" y="716">Edição, capa e RSS em HTML estático. O alerta só fica verde quando o site no ar</text>
+      <text x="144" y="738">mostra a edição do dia. Nesta, 27 dos 44 itens saíram com resumo.</text>
+    </g>
+  </g>
+
+  <!-- verbos -->
+  <g font-family="'Playfair Display', serif" font-size="26" fill="#F4EDE6">
+    <text x="144" y="231">Lê</text>
+    <text x="144" y="323">Escolhe</text>
+    <text x="144" y="415">Abre cada link</text>
+    <text x="144" y="507">Escreve</text>
+    <text x="144" y="599">Confere</text>
+    <text x="144" y="691">Publica</text>
+  </g>
+
+  <!-- de onde vieram as notícias -->
+  <text x="80" y="800" font-family="'IBM Plex Mono Medium', 'IBM Plex Mono', monospace" font-size="13" fill="#A69C94" letter-spacing="2">DE ONDE VIERAM AS 44 NOTÍCIAS (DATELINE DO VEÍCULO, LABS INCLUSOS)</text>
+  <g>
+    <rect x="80" y="816" width="350.5" height="40" rx="6" fill="#F0B35A"/>
+    <rect x="434.5" y="816" width="256" height="40" rx="6" fill="#EC8F6E"/>
+    <rect x="694.5" y="816" width="232.4" height="40" rx="6" fill="#D97F8C"/>
+    <rect x="930.9" y="816" width="189.1" height="40" rx="6" fill="#B07A9E"/>
+  </g>
+  <g font-family="'IBM Plex Mono Medium', 'IBM Plex Mono', monospace" font-size="16" fill="#17120F" letter-spacing="1">
+    <text x="96" y="842">EUA 15</text>
+    <text x="450.5" y="842">ÁSIA 11</text>
+    <text x="710.5" y="842">EUROPA 10</text>
+    <text x="946.9" y="842">BRASIL 8</text>
+  </g>
+  <text x="80" y="886" font-family="'IBM Plex Mono Medium', 'IBM Plex Mono', monospace" font-size="14" fill="#A69C94">Quando a seleção era por recência, a capa saía inteiramente brasileira. A cota existe por isso.</text>
+</svg>
