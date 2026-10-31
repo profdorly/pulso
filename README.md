@@ -62,7 +62,7 @@ O porquê de cada regra está em [docs/como-funciona.md](docs/como-funciona.md);
 ```mermaid
 flowchart LR
     W["Worker da Cloudflare<br/>07:32 · 09:05 · 17:15"] --> A["GitHub Actions<br/>publicar.yml"]
-    G["cron do GitHub<br/>07:27 · 17:10, de reserva"] -.-> A
+    G["cron do GitHub<br/>17:10, rede final"] -.-> A
     A <-->|"baixa e devolve news.db<br/>(escrita condicional)"| R[("Cloudflare R2<br/>pulso-cozinha")]
     A -->|deploy| P["GitHub Pages<br/>pulso.dorly.com.br"]
     A -->|"ping só se o site no ar<br/>mostra a edição"| H["Healthchecks.io"]

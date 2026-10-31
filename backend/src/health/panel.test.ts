@@ -115,14 +115,15 @@ describe("verdict", () => {
     expect(verdict({ runs: [yesterday], healthchecks, cloudflare, now: new Date("2026-10-24T09:00:00Z") }).level).toBe("pending");
   });
 
-  it("flags a run GitHub left in waiting, which holds the publish queue", () => {
+  it("mentions a run GitHub left in waiting, without blaming the queue", () => {
     const stuck = run({ number: 77, status: "waiting", conclusion: null, createdAt: "2026-10-24T13:00:00Z", reports: [] });
     const fresh = run({ number: 78, status: "waiting", conclusion: null, createdAt: "2026-10-24T14:50:00Z", reports: [] });
-    const v = verdict({ runs: [stuck, fresh], healthchecks, cloudflare, now });
-    expect(v.level).toBe("bad");
-    const texts = v.issues.map((issue) => issue.text).join(" ");
-    expect(texts).toContain("#77 está presa no GitHub desde 10:00 de 24/10");
-    expect(texts).not.toContain("#78");
+    const ghost = run({ number: 60, status: "waiting", conclusion: null, createdAt: "2026-10-20T13:00:00Z", reports: [] });
+    const v = verdict({ runs: [stuck, fresh, ghost], healthchecks, cloudflare, now });
+    const flagged = v.issues.filter((issue) => issue.text.includes("presa no GitHub"));
+    expect(flagged).toHaveLength(1);
+    expect(flagged[0]).toMatchObject({ level: "warn" });
+    expect(flagged[0].text).toContain("#77 ficou presa no GitHub desde 10:00 de 24/10");
   });
 });
 

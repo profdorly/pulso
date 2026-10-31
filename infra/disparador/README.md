@@ -2,7 +2,7 @@
 
 Um Worker da Cloudflare que, às 07:32, às 09:05 e às 17:15 de Brasília, pede ao GitHub uma
 execução de `publicar.yml` com `tarefa=edicao`. É o gatilho principal da publicação diária. O
-`schedule` do GitHub atrasa horas ou não dispara, e fica só como reserva, às 07:27 e às 17:10.
+`schedule` do GitHub atrasa horas ou não dispara, e fica só como rede final, às 17:10 (chega por volta das 20h).
 
 O horário da tarde é o herdeiro do `pulso-site-tarde` da AWS (20:15 UTC), que republicava o site se
 ele estivesse velho. Aqui, se a edição já saiu de manhã, a corrida da tarde só confere o site no ar
@@ -14,13 +14,13 @@ dias sem atividade (`disabled_inactivity`), ele religa; se foi desligado à mão
 (`disabled_manually`), respeita. Qualquer resposta 2xx do dispatch conta como sucesso (o GitHub
 responde 204, ou 200 quando devolve os dados da execução).
 
-Ele também procura corrida presa: uma em "waiting" há mais de 40 minutos, que o GitHub perdeu e que
-segura a fila de todas as outras (29/10/2026). Tenta cancelar; se o GitHub recusar, dispara com
-`fila=desvio-<id>`, uma fila só dela, e cancela as corridas paradas atrás da presa. Detalhes em
-[docs/operacao.md](../../docs/operacao.md#corrida-presa). Testes: `node --test src/index.test.ts`.
+Antes de cada disparo, o Worker olha o site no ar: se a capa já mostra a edição de hoje, ele não
+dispara nada. Num dia normal, só o horário das 07:32 dispara; os outros são tentativas para um dia
+em que a edição não saiu (por exemplo, porque o GitHub prendeu a corrida da manhã, como em
+29/10/2026). Se o site não responde, ele dispara mesmo assim. Testes: `node --test src/index.test.ts`.
 
-O Worker não decide nada. Quem sabe se a edição de hoje já saiu é a cozinha: se saiu, ela responde
-`slot-already-published` e para. Por isso disparos a mais não fazem mal.
+Se o Worker disparar sem precisar (o site demorou a mostrar a edição, por exemplo), não há estrago:
+a cozinha vê que a edição de hoje já saiu, responde `slot-already-published` e para.
 
 Ele não tem rota, domínio nem endereço `*.workers.dev`. Só acorda pelo cron.
 

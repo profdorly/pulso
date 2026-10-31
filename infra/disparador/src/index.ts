@@ -1,8 +1,12 @@
-// Pede ao GitHub uma execução de publicar.yml com tarefa=edicao. Não decide nada: a cozinha é que
-// sabe se a edição de hoje já saiu (slot-already-published) e, nesse caso, só confere se o site no
-// ar a mostra e republica se preciso. Por isso os três horários do cron e o cron de reserva do
-// próprio GitHub podem disparar sem medo. O das 17:15 de Brasília é o herdeiro do `pulso-site-tarde`
-// da AWS: um dia em que as corridas da manhã falharam é retomado à tarde, não no dia seguinte.
+// Pede ao GitHub uma execução de publicar.yml com tarefa=edicao, mas só quando ela faz falta: antes
+// de disparar, olha o site no ar. Se a capa já mostra a edição de hoje, não há o que fazer e nada é
+// disparado. Assim um dia normal tem uma corrida (a das 07:32), e os horários das 09:05 e das 17:15
+// são tentativas de verdade, que só rodam se a edição ainda não saiu.
+//
+// Menos corridas é menos exposição ao GitHub: em 29/10/2026 uma corrida ficou presa antes do
+// primeiro job e, porque as corridas andavam numa fila única, segurou todas as seguintes e o dia
+// 30/10 ficou sem edição. A fila única acabou (publicar.yml); com este filtro, uma corrida presa
+// custa só o próprio horário, e a tentativa seguinte roda.
 
 interface Env {
   GITHUB_TOKEN: string;
@@ -14,9 +18,9 @@ interface ScheduledController {
   readonly scheduledTime: number;
 }
 
-const REPO_URL = "https://api.github.com/repos/profdorly/pulso";
-const WORKFLOW_URL = `${REPO_URL}/actions/workflows/publicar.yml`;
+const WORKFLOW_URL = "https://api.github.com/repos/profdorly/pulso/actions/workflows/publicar.yml";
 const DISPATCH_URL = `${WORKFLOW_URL}/dispatches`;
+const SITE = "https://pulso.dorly.com.br";
 const ATTEMPTS = 3;
 const BACKOFF_MS = [0, 5_000, 20_000];
 const TIMEOUT_MS = 15_000;
@@ -30,6 +34,32 @@ function headers(env: Env): Record<string, string> {
     "X-GitHub-Api-Version": "2022-11-28",
     "User-Agent": "pulso-disparador",
   };
+}
+
+/** The edition the kitchen makes on `now`'s day in Brasília: `2026-10-31-manha`. */
+export function todayEditionId(now: number): string {
+  const date = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(now));
+  return `${date}-manha`;
+}
+
+/**
+ * The edition the live cover shows (the `pulso:edition` marker the prerender writes), or null when
+ * the site cannot be read. Unreadable counts as "not live": dispatching for nothing costs a minute
+ * of a free runner; not dispatching could cost the day.
+ */
+export async function liveEdition(now: number): Promise<string | null> {
+  try {
+    // The query string goes past the CDN's copy, so a deploy of minutes ago is what is seen.
+    const res = await fetch(`${SITE}/?disparador=${now}`, {
+      headers: { "Cache-Control": "no-cache", "User-Agent": "pulso-disparador" },
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return /<meta name="pulso:edition" content="([^"]+)"/.exec(await res.text())?.[1] ?? null;
+  } catch (err) {
+    console.error(`não deu para ler o site no ar: ${err instanceof Error ? err.message : String(err)}`);
+    return null;
+  }
 }
 
 // O GitHub desliga o workflow de um repositório público após 60 dias sem atividade
@@ -55,7 +85,7 @@ async function ensureActive(env: Env): Promise<void> {
   }
 }
 
-async function dispatch(env: Env, cron: string, fila?: string): Promise<void> {
+async function dispatch(env: Env, cron: string): Promise<void> {
   if (!env.GITHUB_TOKEN) throw new Error("GITHUB_TOKEN ausente: rode `wrangler secret put GITHUB_TOKEN`");
 
   let lastError = "";
@@ -65,13 +95,13 @@ async function dispatch(env: Env, cron: string, fila?: string): Promise<void> {
       const res = await fetch(DISPATCH_URL, {
         method: "POST",
         headers: { ...headers(env), "Content-Type": "application/json" },
-        body: JSON.stringify({ ref: "main", inputs: { tarefa: "edicao", ...(fila ? { fila } : {}) } }),
+        body: JSON.stringify({ ref: "main", inputs: { tarefa: "edicao" } }),
         signal: AbortSignal.timeout(TIMEOUT_MS),
       });
       // 204 é a resposta clássica; com `return_run_details` (e, segundo relatos, às vezes sem
       // pedir) o GitHub responde 200. Os dois querem dizer que a execução foi criada.
       if (res.ok) {
-        console.log(`publicar.yml disparado (cron "${cron}", tentativa ${attempt}${fila ? `, fila ${fila}` : ""})`);
+        console.log(`publicar.yml disparado (cron "${cron}", tentativa ${attempt})`);
         return;
       }
       // A mensagem de erro do GitHub não traz o token; o corte só evita log gigante.
@@ -87,76 +117,18 @@ async function dispatch(env: Env, cron: string, fila?: string): Promise<void> {
   throw new Error(`publicar.yml não foi disparado (cron "${cron}"): ${lastError}`);
 }
 
-// Uma corrida normal sai de "waiting" em segundos: o ambiente `production` não tem aprovador nem
-// espera. Parada assim há mais que isto, o GitHub a perdeu (29/10/2026: 30 horas, um dia sem
-// edição) e ela segura a fila do workflow para sempre, sem aceitar cancelamento.
-const STUCK_AFTER_MS = 40 * 60_000;
-
-interface RunSummary {
-  id: number;
-  status: string;
-  created_at: string;
-}
-
-async function runsWithStatus(env: Env, status: "waiting" | "pending" | "in_progress"): Promise<RunSummary[]> {
-  const res = await fetch(`${WORKFLOW_URL}/runs?status=${status}&per_page=50`, {
-    headers: headers(env),
-    signal: AbortSignal.timeout(TIMEOUT_MS),
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status} ao listar corridas ${status}`);
-  return ((await res.json()) as { workflow_runs?: RunSummary[] }).workflow_runs ?? [];
-}
-
-async function cancelRun(env: Env, id: number): Promise<boolean> {
-  const res = await fetch(`${REPO_URL}/actions/runs/${id}/cancel`, {
-    method: "POST",
-    headers: headers(env),
-    signal: AbortSignal.timeout(TIMEOUT_MS),
-  });
-  return res.ok;
-}
-
-/**
- * Procura uma corrida presa e devolve a fila de desvio para o disparo, ou nada se a fila andar.
- *
- * Primeiro tenta cancelar a corrida presa; quando o GitHub aceita, a fila volta a andar e não há
- * desvio. Quando recusa (o caso de 29/10), o disparo vai para `desvio-<id da presa>`: todas as
- * corridas do Worker durante o mesmo problema caem nessa fila e continuam uma por vez. As que
- * ficaram paradas atrás da presa são canceladas, porque nunca vão rodar e só confundem o painel.
- * Qualquer erro aqui vai para o log e o disparo segue na fila normal.
- */
-export async function unstick(env: Env, now = Date.now()): Promise<string | undefined> {
-  try {
-    const stuck = (await runsWithStatus(env, "waiting")).filter((run) => now - Date.parse(run.created_at) > STUCK_AFTER_MS);
-    if (stuck.length === 0) return undefined;
-    const oldest = stuck.reduce((a, b) => (Date.parse(a.created_at) <= Date.parse(b.created_at) ? a : b));
-    console.error(`corrida ${oldest.id} presa em "waiting" desde ${oldest.created_at}`);
-
-    const freed = await Promise.all(stuck.map((run) => cancelRun(env, run.id)));
-    // Só sem corrida rodando: uma parada atrás de uma que está trabalhando apenas espera a vez.
-    if ((await runsWithStatus(env, "in_progress")).length === 0) {
-      for (const run of (await runsWithStatus(env, "pending")).filter((r) => now - Date.parse(r.created_at) > STUCK_AFTER_MS)) {
-        if (await cancelRun(env, run.id)) console.log(`corrida ${run.id}, parada na fila atrás da presa, cancelada`);
-      }
-    }
-    if (freed.every(Boolean)) {
-      console.log("a corrida presa aceitou o cancelamento; a fila normal volta a andar");
-      return undefined;
-    }
-    console.error(`o GitHub recusou cancelar a corrida ${oldest.id}; disparando numa fila de desvio`);
-    return `desvio-${oldest.id}`;
-  } catch (err) {
-    console.error(`não deu para conferir corridas presas: ${err instanceof Error ? err.message : String(err)}`);
-    return undefined;
-  }
-}
-
 export default {
   // Esperamos o disparo aqui mesmo, sem ctx.waitUntil: assim uma falha final faz a invocação
   // terminar em erro nos logs da Cloudflare. A espera da rede não conta no limite de CPU.
   async scheduled(controller: ScheduledController, env: Env): Promise<void> {
-    if (!env.GITHUB_TOKEN) return dispatch(env, controller.cron);
-    await ensureActive(env);
-    await dispatch(env, controller.cron, await unstick(env));
+    const expected = todayEditionId(controller.scheduledTime);
+    const live = await liveEdition(controller.scheduledTime);
+    if (live === expected) {
+      console.log(`o site já mostra ${expected}; nada a disparar (cron "${controller.cron}")`);
+      return;
+    }
+    console.log(`o site mostra ${live ?? "nada"}, esperado ${expected}; disparando`);
+    if (env.GITHUB_TOKEN) await ensureActive(env);
+    await dispatch(env, controller.cron);
   },
 };
