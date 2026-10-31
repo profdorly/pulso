@@ -24,7 +24,7 @@
     "budget:bundle": "node scripts/bundle-budget.mjs",
     "a11y": "node scripts/a11y.mjs",
     "docs:images": "node scripts/readme-images.mjs",
-    "test:scripts": "node --test scripts/bundle-budget.test.mjs scripts/og-raster.test.mjs scripts/edition-paths.test.mjs scripts/prerender.test.mjs",
+    "test:scripts": "node --test scripts/bundle-budget.test.mjs scripts/og-raster.test.mjs scripts/edition-paths.test.mjs scripts/prerender.test.mjs infra/disparador/src/index.test.ts",
     "test": "npm run test --workspace=backend && npm run test --workspace=frontend && npm run test:scripts",
     "typecheck": "npm run typecheck --workspace=backend && npm run typecheck --workspace=frontend",
     "lint": "npm run lint --workspace=backend && npm run lint --workspace=frontend"

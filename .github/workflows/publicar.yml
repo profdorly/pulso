@@ -51,13 +51,23 @@ on:
         description: "Começar uma cozinha vazia (só na primeira corrida de um fork)"
         type: boolean
         default: false
+      fila:
+        description: "Fila de desvio (o Worker preenche quando uma corrida fica presa; deixe vazio)"
+        type: string
+        default: ""
 
 permissions: {}
 
 # Uma publicação por vez, em fila. `queue: max` mantém todas as que chegam esperando a vez; sem
 # ele, o GitHub guarda só uma pendente e cancela a anterior quando chega outra.
+# O nome da fila tem duas válvulas porque o GitHub às vezes deixa uma corrida presa em "waiting"
+# antes do primeiro job, segurando a vez para sempre e sem aceitar cancelamento (aconteceu em
+# 29/10/2026 e custou a edição de 30/10). Uma fila nova deixa a corrida fantasma sozinha na antiga:
+#   - `inputs.fila`: o Worker (infra/disparador) vê a corrida presa e dispara numa fila de desvio;
+#   - `vars.PULSO_FILA`: à mão, vale para tudo, inclusive os crons e o push:
+#     gh variable set PULSO_FILA --body <número seguinte>
 concurrency:
-  group: publicar
+  group: publicar-${{ inputs.fila || vars.PULSO_FILA || '1' }}
   queue: max
 
 jobs:
