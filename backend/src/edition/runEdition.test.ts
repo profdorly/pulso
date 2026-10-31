@@ -300,7 +300,6 @@ describe("runEdition", () => {
     expect(edition?.digest.headline.length).toBeGreaterThan(0);
     expect(edition?.timezone).toBe("America/Sao_Paulo");
     expect(edition?.models).toEqual({
-      discovery: "gpt-5.6-terra",
       editorial: "gpt-6.1-sol",
       worker: "gpt-6-luna",
     });
@@ -1274,7 +1273,6 @@ describe("runEdition", () => {
     });
     expect(result.status).toBe("published");
     expect(createEditionStore(editionsDir).readLatest()?.models).toEqual({
-      discovery: "gpt-5.6-terra",
       editorial: "gpt-6.1-sol",
       worker: "gpt-5.6-luna",
     });

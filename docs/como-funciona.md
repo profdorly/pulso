@@ -99,6 +99,8 @@ Com `PULSO_WEB_SEARCH=shadow`, cada resultado passa pelas checagens que enfrenta
 
 Na semana de 13 a 19 de outubro de 2026 a busca trouxe 42 candidatos e 18 passaram em tudo. Dos 24 descartados, 11 eram de redações que bloqueiam leitor automático (AP, UOL, El País…), que agora ficam fora da busca, e 6 eram matérias em chinês, japonês e árabe recusadas por um defeito: a comparação de título só enxergava letras latinas, e um título nessas escritas não casava nem com a própria página. A comparação agora lê qualquer escrita (pares de caracteres onde não há espaço entre palavras).
 
+Para ler uma semana de logs de uma vez, `npm run sombra -- --dias 7` junta as linhas `pulso-web-search-shadow` das corridas pelo GitHub CLI já autenticado e mostra, por edição, quantas buscas fez, quantas candidatas trouxe e quantas passaram, o motivo de cada descarte e a distribuição das que passaram por região da busca, idioma e veículo. Uma matéria achada em duas janelas conta uma vez. `--modelo gpt-6.1-terra` separa os dias da busca nova dos da antiga.
+
 ## O texto, do feed à capa
 
 Texto em PT-BR (headline, lede, bullets, blurbs) passa pelo Humanizador **antes** de gravar a edição: skill no Cursor (`.cursor/skills/humanizador`) e uma passada no publisher (`backend/src/edition/humanize.ts`). A skill sozinha não basta: a corrida agendada não tem um editor humano no meio.
