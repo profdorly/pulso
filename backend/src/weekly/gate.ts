@@ -16,13 +16,17 @@ import { ALLOWED_TAGS, allTurns, SPEAKER_ROLE, spokenText, tagsIn, type EpisodeS
  * cited figure lies within a few percent, on the side the hedge promises.
  */
 
+/**
+ * Sized for an episode of at most five minutes as published (`episodeFormat.ts`): 5,100
+ * characters, tags included, is about 333 s at the voices' pace and about 290 s at 1.15×.
+ */
 export const SCRIPT_LIMITS = {
-  minChars: 5_500,
-  maxChars: 9_000,
+  minChars: 3_800,
+  maxChars: 5_100,
   /** One turn has to fit, with neighbours, inside a 2,000-character request. */
   maxTurnChars: 650,
   maxTagsPerTurn: 2,
-  maxTags: 32,
+  maxTags: 20,
   minShare: 0.3,
 } as const;
 

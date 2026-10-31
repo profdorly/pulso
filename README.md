@@ -20,7 +20,7 @@ Notícia de IA sai primeiro lá fora, e o veículo brasileiro que traduz leva di
 - **Capa e edição do dia**: o resumo da manhã, as prioridades e o radar, separado em imprensa e anúncios direto dos labs. O título de cada item leva à fonte; o resumo em português abre na própria edição.
 - **[Arquivo](https://pulso.dorly.com.br/arquivo/)** de todas as edições, cada uma com uma capa 16:9 desenhada pelo programa.
 - **[Modelos](https://pulso.dorly.com.br/modelos/)**: catálogo semanal com os números da Artificial Analysis. Responde qual é o mais inteligente, o mais rápido, o mais barato e quem está na fronteira de preço × inteligência.
-- **Pulso da Semana**: a semana em áudio, por enquanto gerado à mão.
+- **[Pulso da Semana](https://pulso.dorly.com.br/semana/)**: toda segunda-feira, a semana em IA em até cinco minutos de áudio, com transcrição e fontes. Disparado à mão, com o roteiro lido e aprovado antes de virar áudio ([docs/pulso-da-semana.md](docs/pulso-da-semana.md)).
 - **[RSS](https://pulso.dorly.com.br/feed.xml)** e **[metodologia](https://pulso.dorly.com.br/metodologia/)**, a versão para o leitor do que este README explica.
 
 <p>
@@ -97,10 +97,10 @@ npm run build:site                  # monta dist-site/ a partir de data/editions
 npm run verify:site                 # sobe o site local e confere rotas, metadados e feeds
 ```
 
-O Pulso da Semana é gerado à mão (`backend/src/weekly/pilot.ts`, sobre as edições de `npm run kitchen:export`), que grava o episódio em `.tmp/weekly-audio-pilot/<semana>/`. Para publicar:
+O Pulso da Semana sai toda segunda, uma etapa por comando, com o roteiro aprovado por uma pessoa antes de virar áudio. O passo a passo, para pessoas e para agentes de IA, está em [docs/pulso-da-semana.md](docs/pulso-da-semana.md):
 
 ```bash
-npm run kitchen:weekly -- --from .tmp/weekly-audio-pilot/2026-W43   # envia o episódio e soma ao índice
+npm run semana -- status     # onde a semana está e qual é o próximo passo
 ```
 
 Testes e checagens, os mesmos do CI:

@@ -271,11 +271,14 @@ try {
   const sitemap = await get("/sitemap.xml");
   check("sitemap lists the cover", sitemap.body.includes(`<loc>${ORIGIN}/</loc>`));
   check("sitemap lists the methodology", sitemap.body.includes(`<loc>${ORIGIN}/metodologia/</loc>`));
+  check("sitemap lists the weekly list", sitemap.body.includes(`<loc>${ORIGIN}/semana/</loc>`));
+  check("sitemap lists no weekly episode", !new RegExp(`<loc>${ORIGIN}/semana/\\d{4}-W\\d{2}`).test(sitemap.body));
   check("sitemap lists no dated edition", !new RegExp(`<loc>${ORIGIN}/\\d{4}-\\d{2}-\\d{2}`).test(sitemap.body));
 
   // ---- Static pages ----
   for (const [label, pathname] of [
     ["arquivo", "/arquivo/"],
+    ["semana", "/semana/"],
     ["metodologia", "/metodologia/"],
     ...(catalog ? [["modelos", "/modelos/"]] : []),
   ]) {

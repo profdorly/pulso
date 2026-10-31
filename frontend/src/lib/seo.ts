@@ -327,6 +327,39 @@ export function methodologyMetadata(): PageMetadata {
   };
 }
 
+/**
+ * `/semana/`, the list of every Pulso da Semana episode. Indexable: it is the stable address of
+ * the weekly audio. Each episode page stays noindex while its transcript renders only in the
+ * browser, since a crawler would find an empty page there.
+ */
+export function weeklyArchiveMetadata(index: { episodes: Array<{ title: string; weekId: string }> }): PageMetadata {
+  const canonical = absoluteUrl("semana");
+  const count = index.episodes.length;
+  return {
+    title: `Pulso da Semana: a semana em IA em áudio — ${SITE_NAME}`,
+    description: clampDescription(
+      count > 0
+        ? `Toda segunda-feira, a semana em IA em até cinco minutos, em áudio com transcrição e fontes. ${count} ${count === 1 ? "episódio" : "episódios"}.`
+        : "Toda segunda-feira, a semana em IA em até cinco minutos, em áudio com transcrição e fontes."
+    ),
+    canonical,
+    ogType: "website",
+    ...journalImage(),
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      name: `Pulso da Semana — ${SITE_NAME}`,
+      inLanguage: "pt-BR",
+      url: canonical,
+      hasPart: index.episodes.map((episode) => ({
+        "@type": "PodcastEpisode",
+        name: episode.title,
+        url: absoluteUrl(`semana/${episode.weekId}`),
+      })),
+    },
+  };
+}
+
 export function notFoundMetadata(): PageMetadata {
   const canonical = absoluteUrl("");
   return {

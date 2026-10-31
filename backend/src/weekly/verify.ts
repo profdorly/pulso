@@ -3,8 +3,7 @@ import path from "node:path";
 import OpenAI from "openai";
 import { fold } from "../edition/evidence.js";
 import { chunkKey, chunkScript } from "./audioPilot.js";
-import { arg, pilotDir } from "./cli.js";
-import { isoWeekId } from "./input.js";
+import { pilotDir } from "./cli.js";
 import { ALLOWED_TAGS, spokenText, type EpisodeScript } from "./script.js";
 
 /**
@@ -86,8 +85,7 @@ function runs(ops: Op[], kind: "d" | "i"): string[] {
   return found;
 }
 
-export async function runVerify(): Promise<void> {
-  const weekId = isoWeekId(arg("--week-start"));
+export async function runVerify(weekId: string): Promise<{ worstWordErrorRate: number; flagged: number }> {
   const dir = pilotDir(weekId);
   const script = JSON.parse(readFileSync(path.join(dir, "script.json"), "utf8")) as EpisodeScript;
   const apiKey = process.env.OPENAI_API_KEY;
@@ -132,4 +130,8 @@ export async function runVerify(): Promise<void> {
   writeFileSync(path.join(dir, "verify.json"), `${JSON.stringify(report, null, 2)}\n`);
   const opening = report[0]?.transcript.split(/\s+/).slice(0, 40).join(" ") ?? "";
   console.log(`\nabertura transcrita: "${opening}…"`);
+  return {
+    worstWordErrorRate: Math.max(0, ...report.map((entry) => entry.wordErrorRate)),
+    flagged: report.reduce((sum, entry) => sum + entry.skipped.length + entry.added.length + entry.tagWordsHeard.length, 0),
+  };
 }

@@ -5,7 +5,8 @@ import { editionsUrl } from "./paths.js";
 /**
  * The weekly audio episode as published under `editions/weekly/`.
  *
- * Only the lazy weekly modules import this file, so none of it reaches the critical bundle.
+ * The player imports this file from its lazy chunk; the `/semana/` list (static, no script)
+ * uses only the small index helpers.
  */
 
 export type WeeklySpeaker = "host" | "analyst";

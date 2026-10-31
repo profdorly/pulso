@@ -15,6 +15,7 @@ export {
   methodologyMetadata,
   modelsMetadata,
   notFoundMetadata,
+  weeklyArchiveMetadata,
   absoluteUrl,
   clampDescription,
 } from "./lib/seo.js";

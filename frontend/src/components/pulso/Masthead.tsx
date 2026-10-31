@@ -12,6 +12,7 @@ import { cn } from "../../lib/utils.js";
 const links = [
   { to: "/", label: "Capa", end: true },
   { to: "/arquivo/", label: "Arquivo", end: false },
+  { to: "/semana/", label: "Semana", end: false },
   { to: "/modelos/", label: "Modelos", end: false },
   { to: "/metodologia/", label: "Metodologia", end: false },
 ];

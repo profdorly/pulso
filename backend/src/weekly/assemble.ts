@@ -1,9 +1,10 @@
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import type { Chunk, StoredChunk } from "./audioPilot.js";
 import { VOICES } from "./audioPilot.js";
+import { EPISODE_SPEED, MAX_EPISODE_SECONDS } from "./episodeFormat.js";
 import type { WeeklyInput } from "./input.js";
 import { spokenText, type EpisodeScript, type Speaker } from "./script.js";
 
@@ -12,8 +13,9 @@ import { spokenText, type EpisodeScript, type Speaker } from "./script.js";
  *
  * Chunks are decoded to PCM before they are joined, so each chunk's offset is its exact sample
  * count rather than an MP3 duration that includes encoder padding — that padding would drift
- * the transcript a few tens of milliseconds per chunk. Loudness is normalised once, over the
- * whole episode, to the podcast target of -16 LUFS; normalisation changes level, not timing.
+ * the transcript a few tens of milliseconds per chunk. The joined audio is sped up once to
+ * EPISODE_SPEED (pitch kept) and loudness is normalised over the whole episode to the podcast
+ * target of -16 LUFS; every timing is divided by the same speed, so the transcript follows.
  */
 
 const SAMPLE_RATE = 44_100;
@@ -40,6 +42,8 @@ export interface WeeklyEpisode {
   to: string;
   publishedAt: string;
   durationSeconds: number;
+  /** Speed baked into the file; timings are already in published (sped-up) seconds. */
+  speed?: number;
   audio: { path: string; bytes: number; sha256: string; mime: "audio/mpeg" };
   speakers: Record<Speaker, { role: string; voice: string }>;
   model: string;
@@ -168,12 +172,23 @@ export function assembleEpisode(options: {
     offset += duration;
   }
 
+  // Timings so far are in generated seconds; the file is sped up below, so the page must see
+  // the same moments divided by the same factor.
+  const generatedSeconds = offset;
+  const published = (t: number) => round(t / EPISODE_SPEED);
+  for (const turn of turns) {
+    turn.start = published(turn.start);
+    turn.end = published(turn.end);
+    turn.words = turn.words.map(([s, e]) => [published(s), published(e)]);
+  }
+  const durationSeconds = published(generatedSeconds);
+
   const listFile = path.join(work, "list.txt");
   writeFileSync(listFile, `${list.join("\n")}\n`);
   const master = path.join(work, "episode.mp3");
   ffmpeg([
     "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", listFile,
-    "-af", "loudnorm=I=-16:TP=-1.5:LRA=11", "-ar", String(SAMPLE_RATE), "-ac", "1", "-b:a", "96k", master,
+    "-af", `atempo=${EPISODE_SPEED},loudnorm=I=-16:TP=-1.5:LRA=11`, "-ar", String(SAMPLE_RATE), "-ac", "1", "-b:a", "96k", master,
   ]);
   const audio = readFileSync(master);
   const sha256 = createHash("sha256").update(audio).digest("hex");
@@ -203,6 +218,9 @@ export function assembleEpisode(options: {
 
   const audioName = `episode-${sha256.slice(0, 10)}.mp3`;
   const publicDir = path.join(dir, "public", "weekly", input.weekId);
+  // `kitchen:weekly` uploads every file in this folder: an MP3 from an earlier assembly would go
+  // up beside the new one and stay on the site, unreferenced.
+  rmSync(publicDir, { recursive: true, force: true });
   mkdirSync(publicDir, { recursive: true });
   writeFileSync(path.join(publicDir, audioName), audio);
 
@@ -216,7 +234,8 @@ export function assembleEpisode(options: {
     from: input.from,
     to: input.to,
     publishedAt: new Date().toISOString(),
-    durationSeconds: round(offset),
+    durationSeconds,
+    speed: EPISODE_SPEED,
     audio: { path: `weekly/${input.weekId}/${audioName}`, bytes: audio.length, sha256, mime: "audio/mpeg" },
     speakers: {
       host: { role: VOICES.host.role, voice: VOICES.host.name },
@@ -250,9 +269,13 @@ export function assembleEpisode(options: {
   );
 
   const report = {
-    durationSeconds: round(offset),
-    durationLabel: `${Math.floor(offset / 60)} min ${Math.round(offset % 60)} s`,
-    charsPerSecond: round(episode.credits.scriptChars / offset),
+    durationSeconds,
+    durationLabel: `${Math.floor(durationSeconds / 60)} min ${Math.round(durationSeconds % 60)} s`,
+    generatedSeconds: round(generatedSeconds),
+    speed: EPISODE_SPEED,
+    maxSeconds: MAX_EPISODE_SECONDS,
+    overLimit: durationSeconds > MAX_EPISODE_SECONDS,
+    charsPerGeneratedSecond: round(episode.credits.scriptChars / generatedSeconds),
     bytes: audio.length,
     chunkLoudnessLufs: loudness,
     loudnessSpreadLu: (() => {
@@ -267,4 +290,7 @@ export function assembleEpisode(options: {
   };
   writeFileSync(path.join(dir, "audio-report.json"), `${JSON.stringify(report, null, 2)}\n`);
   console.log(JSON.stringify(report, null, 2));
+  if (report.overLimit) {
+    console.log(`\nATENÇÃO: o episódio tem ${report.durationLabel}, acima de ${MAX_EPISODE_SECONDS / 60} min; \`publicar\` vai recusá-lo`);
+  }
 }

@@ -11,6 +11,7 @@ import { HomePage } from "./pages/HomePage.js";
 import { MethodologyPage } from "./pages/MethodologyPage.js";
 import { ModelsPage } from "./pages/ModelsPage.js";
 import { NotFoundPage } from "./pages/NotFoundPage.js";
+import { WeeklyArchivePage } from "./pages/WeeklyArchivePage.js";
 
 /** Weekly audio: player and transcript live in their own chunk, loaded only where they render. */
 const Weekly = lazy(() => import("./pages/Weekly.js"));
@@ -57,6 +58,7 @@ function App() {
               <Route path="/arquivo/:page" element={<ArchivePage />} />
               <Route path="/modelos" element={<ModelsPage />} />
               <Route path="/metodologia" element={<MethodologyPage />} />
+              <Route path="/semana" element={<WeeklyArchivePage />} />
               <Route path="/semana/:weekId" element={<WeeklyRoute />} />
               <Route path="/:date" element={<DateRoute><EditionPage /></DateRoute>} />
               <Route path="*" element={<NotFoundPage />} />

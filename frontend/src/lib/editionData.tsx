@@ -4,6 +4,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { PulsoEdition, PulsoIndex } from "./edition.js";
 import type { ModelCatalog } from "./modelCatalog.js";
+import type { WeeklyIndex } from "./weekly.js";
 import { EditionNotFoundError } from "./editionsApi.js";
 
 /**
@@ -19,6 +20,8 @@ export interface PreloadedEditionData {
   index?: PulsoIndex | null;
   /** Model catalogue, for the models route. */
   catalog?: ModelCatalog | null;
+  /** Every weekly episode, for the `/semana/` list. */
+  weeklyIndex?: WeeklyIndex | null;
   /** Set when the requested edition is known not to exist. */
   notFound?: boolean;
 }
