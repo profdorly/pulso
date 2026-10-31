@@ -102,18 +102,36 @@ function isHedgedRounding(claim: RiskyClaim, text: string, support: SupportSet):
   return true;
 }
 
+/**
+ * Total length, tags included, and each voice's share of the spoken text: the two numbers the
+ * gate judges the whole script by. The director gets them too, since a model cannot count.
+ */
+export function scriptStats(script: EpisodeScript): Pick<GateReport, "chars" | "spokenChars" | "share"> {
+  let chars = 0;
+  const bySpeaker = { host: 0, analyst: 0 };
+  for (const turn of allTurns(script)) {
+    chars += turn.text.length;
+    bySpeaker[turn.speaker] += spokenText(turn.text).length;
+  }
+  const spokenChars = bySpeaker.host + bySpeaker.analyst;
+  return {
+    chars,
+    spokenChars,
+    share: {
+      host: spokenChars ? bySpeaker.host / spokenChars : 0,
+      analyst: spokenChars ? bySpeaker.analyst / spokenChars : 0,
+    },
+  };
+}
+
 export function gateScript(script: EpisodeScript, input: WeeklyInput): GateReport {
   const refs = storiesByRef(input);
   const problems: GateProblem[] = [];
   const turns = allTurns(script);
-  let chars = 0;
+  const { chars, spokenChars, share } = scriptStats(script);
   let tags = 0;
-  const bySpeaker = { host: 0, analyst: 0 };
 
   for (const turn of turns) {
-    chars += turn.text.length;
-    bySpeaker[turn.speaker] += spokenText(turn.text).length;
-
     if (turn.text.length > SCRIPT_LIMITS.maxTurnChars) {
       problems.push({ turnId: turn.id, problem: `fala com ${turn.text.length} caracteres (máx. ${SCRIPT_LIMITS.maxTurnChars})` });
     }
@@ -144,11 +162,6 @@ export function gateScript(script: EpisodeScript, input: WeeklyInput): GateRepor
     }
   }
 
-  const spokenChars = bySpeaker.host + bySpeaker.analyst;
-  const share = {
-    host: spokenChars ? bySpeaker.host / spokenChars : 0,
-    analyst: spokenChars ? bySpeaker.analyst / spokenChars : 0,
-  };
   if (chars < SCRIPT_LIMITS.minChars || chars > SCRIPT_LIMITS.maxChars) {
     problems.push({ problem: `roteiro com ${chars} caracteres (faixa ${SCRIPT_LIMITS.minChars}–${SCRIPT_LIMITS.maxChars})` });
   }
