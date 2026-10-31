@@ -14,6 +14,11 @@ dias sem atividade (`disabled_inactivity`), ele religa; se foi desligado à mão
 (`disabled_manually`), respeita. Qualquer resposta 2xx do dispatch conta como sucesso (o GitHub
 responde 204, ou 200 quando devolve os dados da execução).
 
+Ele também procura corrida presa: uma em "waiting" há mais de 40 minutos, que o GitHub perdeu e que
+segura a fila de todas as outras (29/10/2026). Tenta cancelar; se o GitHub recusar, dispara com
+`fila=desvio-<id>`, uma fila só dela, e cancela as corridas paradas atrás da presa. Detalhes em
+[docs/operacao.md](../../docs/operacao.md#corrida-presa). Testes: `node --test src/index.test.ts`.
+
 O Worker não decide nada. Quem sabe se a edição de hoje já saiu é a cozinha: se saiu, ela responde
 `slot-already-published` e para. Por isso disparos a mais não fazem mal.
 
