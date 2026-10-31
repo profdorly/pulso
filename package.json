@@ -19,7 +19,7 @@
     "health": "npm run health --workspace=backend --",
     "spike:auditor": "cd backend && npx tsx src/edition/auditorCli.ts",
     "build": "npm run build --workspace=backend && npm run build --workspace=frontend",
-    "build:site": "node scripts/rasterize-og.mjs && npm run build --workspace=frontend && npm run build:ssr --workspace=frontend && node scripts/build-site.mjs && node scripts/rasterize-covers.mjs && node scripts/prerender.mjs",
+    "build:site": "node scripts/rasterize-og.mjs && npm run build:client --workspace=frontend && npm run build:ssr --workspace=frontend && node scripts/build-site.mjs && node scripts/rasterize-covers.mjs && node scripts/prerender.mjs",
     "verify:site": "node scripts/verify-site.mjs",
     "budget:bundle": "node scripts/bundle-budget.mjs",
     "a11y": "node scripts/a11y.mjs",
