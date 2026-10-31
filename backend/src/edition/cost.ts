@@ -17,6 +17,8 @@ export const MODEL_PRICES: Record<string, ModelPrice> = {
   // gpt-6.1-sol is also the fidelity auditor since Bedrock access ended.
   "gpt-6-luna": { inputPerMillion: 0.1, outputPerMillion: 0.5 },
   "gpt-6.1-sol": { inputPerMillion: 2, outputPerMillion: 10 },
+  // Verified on the same page on 2026-10-31; the web search beyond the feeds runs on it.
+  "gpt-6.1-terra": { inputPerMillion: 1, outputPerMillion: 5 },
   "gpt-5.6-luna": { inputPerMillion: 0.2, outputPerMillion: 1.2 },
   "gpt-5.6-terra": { inputPerMillion: 2, outputPerMillion: 12 },
   "gpt-5.6-sol": { inputPerMillion: 5, outputPerMillion: 30 },

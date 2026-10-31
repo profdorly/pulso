@@ -15,6 +15,6 @@ Then the text is checked twice, with no editor involved:
 
 Prose, framing and editorial judgement are **not** checked. When nothing survives and the last front page is older than 36 hours, the journal publishes a quiet edition that says what was checked and why nothing got in.
 
-It runs entirely on GitHub Actions, GitHub Pages, a Cloudflare R2 bucket and a Cloudflare Worker that triggers the runs. The only paid part is the OpenAI API: about US$ 0.50 an edition, with a hard cap of US$ 4 per run.
+It runs entirely on GitHub Actions, GitHub Pages, a Cloudflare R2 bucket and a Cloudflare Worker that triggers the runs. The only paid part is the OpenAI API: about US$ 0.50 an edition, plus about US$ 0.90 for the web search while it runs as a test, with a hard cap of US$ 4 per run.
 
 The full documentation is in Portuguese: [README](README.md), [how it works](docs/como-funciona.md), [operations](docs/operacao.md) and [measurements](research/). Code under the [Apache License 2.0](LICENSE); the Pulso and Professor Dorly names, logos and visual identity are not covered by it ([TRADEMARKS.md](TRADEMARKS.md)).

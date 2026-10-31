@@ -1034,8 +1034,8 @@ describe("runEdition", () => {
       expect(edition?.items.map((row) => row.url)).toEqual([fresh.url]);
       const searchCost = edition?.costBreakdown.find((row) => row.step === "search");
       expect(searchCost?.webSearchCalls).toBe(6);
-      // 6 searches at US$ 0.01, plus Luna tokens.
-      expect(searchCost?.usd).toBeCloseTo(0.06 + 0.003 + 0.0005, 6);
+      // 6 searches at US$ 0.01, plus Terra tokens.
+      expect(searchCost?.usd).toBeCloseTo(0.06 + 0.03 + 0.005, 6);
 
       const line = writes.find((text) => text.includes("pulso-web-search-shadow"));
       expect(line).toBeDefined();

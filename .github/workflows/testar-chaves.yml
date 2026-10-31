@@ -41,8 +41,10 @@ jobs:
             if [ "$code" = "200" ]; then echo "ok    $1"; else echo "FALHA $1: HTTP $code ${erro}"; falhas=$((falhas + 1)); fi
           }
           # Os mesmos modelos de backend/src/edition/models.ts e auditorModels.ts.
-          call "OpenAI Responses (gpt-6-luna: worker, resumos, busca)" https://api.openai.com/v1/responses \
+          call "OpenAI Responses (gpt-6-luna: worker e resumos)" https://api.openai.com/v1/responses \
             '{"model":"gpt-6-luna","input":"Responda ok.","max_output_tokens":32}' "Authorization: Bearer ${OPENAI_API_KEY}"
+          call "OpenAI Responses (gpt-6.1-terra: busca na web)" https://api.openai.com/v1/responses \
+            '{"model":"gpt-6.1-terra","input":"Responda ok.","max_output_tokens":32}' "Authorization: Bearer ${OPENAI_API_KEY}"
           call "OpenAI Responses (gpt-6.1-sol: capa e humanizador)" https://api.openai.com/v1/responses \
             '{"model":"gpt-6.1-sol","input":"Responda ok.","max_output_tokens":32}' "Authorization: Bearer ${OPENAI_API_KEY}"
           call "OpenAI Chat completions (gpt-6.1-sol: auditor)" https://api.openai.com/v1/chat/completions \
