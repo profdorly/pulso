@@ -284,9 +284,9 @@ export async function fetchModelCatalog(
   options: CatalogFetchOptions = {}
 ): Promise<CatalogFetchResult> {
   const capturedAt = (options.now ?? new Date()).toISOString();
-  const errors: Array<{ modality: Modality; error: string }> = [];
+  const apiKey = options.apiKey;
 
-  if (!options.apiKey) {
+  if (!apiKey) {
     return {
       catalog: emptyCatalog(capturedAt),
       errors: [{ modality: "language", error: "ARTIFICIAL_ANALYSIS_API_KEY ausente" }],
@@ -295,42 +295,52 @@ export async function fetchModelCatalog(
 
   const fetchImpl = options.fetchImpl ?? globalThis.fetch;
   const modalities = options.modalities ?? (Object.keys(AA_ENDPOINTS) as Modality[]);
-  const sections: ModalitySection[] = [];
 
-  for (const modality of modalities) {
-    try {
-      const response = await fetchImpl(`${AA_BASE}${AA_ENDPOINTS[modality]}`, {
-        headers: { "x-api-key": options.apiKey },
-        signal: AbortSignal.timeout(20_000),
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
+  // The endpoints are independent, so they are fetched together: the slowest one bounds the
+  // capture instead of the sum of all seven timeouts. Order is kept by mapping over `modalities`.
+  const results = await Promise.all(
+    modalities.map(async (modality): Promise<{ section: ModalitySection; error?: string }> => {
+      try {
+        const response = await fetchImpl(`${AA_BASE}${AA_ENDPOINTS[modality]}`, {
+          headers: { "x-api-key": apiKey },
+          signal: AbortSignal.timeout(20_000),
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        const body = asRecord(JSON.parse(await response.text()));
+        const rows = Array.isArray(body?.data) ? body.data : [];
+        const indexVersion = asNumber(body?.intelligence_index_version);
+
+        const models =
+          modality === "language"
+            ? rows
+                .map((row) => mapLanguageModel(row, capturedAt, indexVersion ? String(indexVersion) : undefined))
+                .filter((row): row is ModelRecord => row !== null)
+            : rows
+                .map((row) => mapMediaModel(row, modality, capturedAt))
+                .filter((row): row is ModelRecord => row !== null);
+
+        const notes: string[] = [];
+        if (rows.length > 0 && models.length === 0) {
+          notes.push("a fonte respondeu, mas nenhum modelo tinha número utilizável");
+        }
+        const { published, totalAvailable } = applyPublishCap(models, modality);
+        return { section: sectionFor(modality, published, notes, totalAvailable) };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        return {
+          section: sectionFor(modality, [], [`fonte indisponível nesta captura: ${message}`], 0),
+          error: message,
+        };
       }
-      const body = asRecord(JSON.parse(await response.text()));
-      const rows = Array.isArray(body?.data) ? body.data : [];
-      const indexVersion = asNumber(body?.intelligence_index_version);
+    })
+  );
 
-      const models =
-        modality === "language"
-          ? rows
-              .map((row) => mapLanguageModel(row, capturedAt, indexVersion ? String(indexVersion) : undefined))
-              .filter((row): row is ModelRecord => row !== null)
-          : rows
-              .map((row) => mapMediaModel(row, modality, capturedAt))
-              .filter((row): row is ModelRecord => row !== null);
-
-      const notes: string[] = [];
-      if (rows.length > 0 && models.length === 0) {
-        notes.push("a fonte respondeu, mas nenhum modelo tinha número utilizável");
-      }
-      const { published, totalAvailable } = applyPublishCap(models, modality);
-      sections.push(sectionFor(modality, published, notes, totalAvailable));
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      errors.push({ modality, error: message });
-      sections.push(sectionFor(modality, [], [`fonte indisponível nesta captura: ${message}`], 0));
-    }
-  }
+  const sections = results.map((result) => result.section);
+  const errors = results.flatMap((result, index) =>
+    result.error === undefined ? [] : [{ modality: modalities[index], error: result.error }]
+  );
 
   const coverage = sections.flatMap((section) =>
     section.availableMetrics.map((metric) => ({
@@ -352,9 +362,4 @@ export async function fetchModelCatalog(
     },
     errors,
   };
-}
-
-/** Metric definitions the reader needs to label numbers; shipped with the artifact. */
-export function metricDefinitions() {
-  return METRICS;
 }

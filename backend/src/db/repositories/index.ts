@@ -10,5 +10,3 @@ export function createRepositories(db: Db) {
 }
 
 export type Repositories = ReturnType<typeof createRepositories>;
-
-export { createNewsItemsRepository, createBenchmarkSnapshotsRepository };
