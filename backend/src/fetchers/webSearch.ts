@@ -25,7 +25,10 @@ import { PULSO_SEARCH_MODEL } from "../edition/models.js";
  * before anything is counted — which is why the prompt asks for leads rather than proof.
  */
 
-/** Searches per region-and-topic call; twelve calls make about 36 to 45 searches a run. */
+/**
+ * Searches per region-and-topic call. The API treats it as a guide, not a hard cap: in the 31 Oct
+ * 2026 runs, twelve calls at 3 made about 45 searches and twelve at 1 made 24.
+ */
 export const WEB_SEARCH_MAX_CALLS = 3;
 
 /** Leads asked of each call. The checks downstream are the filter, not the prompt. */

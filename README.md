@@ -43,7 +43,7 @@ Todo dia por volta das 07:30 (Brasília):
 5. **Confere** o texto duas vezes, como mostra a próxima seção.
 6. **Publica** a edição, a capa e o feed RSS. Às segundas, antes da edição, atualiza o catálogo de modelos.
 
-Uma busca na web por região roda em teste ao lado dos feeds: ela registra o que traria de novo, sem publicar nada ainda.
+Uma busca na web por região e tema roda em teste ao lado dos feeds: ela registra o que traria de novo, sem publicar nada ainda.
 
 O porquê de cada regra está em [docs/como-funciona.md](docs/como-funciona.md); as medições que embasam as decisões, em [research/](research/).
 
@@ -77,7 +77,7 @@ Horários, configuração do monitor e validade dos tokens: [docs/operacao.md](d
 
 ## Quanto custa
 
-Só a API da OpenAI é paga: cerca de US$ 0,50 por edição (a de 24/10/2026, com 44 itens, custou US$ 0,47). GitHub Actions, GitHub Pages, o bucket R2, o Worker, o Healthchecks e a API da Artificial Analysis ficam no plano gratuito.
+Só a API da OpenAI é paga: cerca de US$ 0,50 por edição (a de 24/10/2026, com 44 itens, custou US$ 0,47), mais cerca de US$ 0,90 da busca na web enquanto ela roda em teste. GitHub Actions, GitHub Pages, o bucket R2, o Worker, o Healthchecks e a API da Artificial Analysis ficam no plano gratuito.
 
 ## Rodar local
 
