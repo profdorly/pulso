@@ -11,12 +11,12 @@ export const PULSO_DISCOVERY_MODEL = "gpt-5.6-terra";
 export const PULSO_EDITORIAL_MODEL = "gpt-6.1-sol";
 export const PULSO_WORKER_MODEL = "gpt-6-luna";
 /**
- * Web search beyond the feeds. Luna with medium reasoning, one call per region: in the October
- * 2026 test it found as much per dollar as GPT-6.1 Sol and more than Luna at low reasoning, which
- * stopped after two searches. Search content tokens bill at the model's input rate, so the cheap
- * model leaves the $0.01 per search as almost the whole cost.
+ * Web search beyond the feeds, at medium reasoning. In the 31 Oct 2026 test (three 24-hour
+ * windows, same feeds and checks, 12 region-by-topic calls) GPT-6.1 Terra brought 37 stories
+ * that passed every check, against 18 for GPT-6 Luna and 23 for GPT-6.1 Sol, at about the same
+ * cost per usable story as Luna (~US$ 0.90 a run). Sol cost more and repeated a published story.
  */
-export const PULSO_SEARCH_MODEL = "gpt-6-luna";
+export const PULSO_SEARCH_MODEL = "gpt-6.1-terra";
 
 export function pulsoModelNames(env: {
   OPENAI_MODEL?: string;
