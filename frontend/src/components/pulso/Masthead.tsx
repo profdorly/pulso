@@ -7,7 +7,6 @@ import {
   SITE_TAGLINE,
 } from "../../lib/siteBase.js";
 import { publicAssetUrl } from "../../lib/paths.js";
-import { cn } from "../../lib/utils.js";
 
 const links = [
   { to: "/", label: "Capa", end: true },
@@ -29,11 +28,14 @@ export function Masthead() {
         </div>
         <div className="flex flex-col items-start gap-6 lg:items-end">
           <a href={PUBLISHER_URL} aria-label={PUBLISHER_NAME} className="inline-block">
+            {/* Lazy on purpose: the CSS hides one of the two per color scheme, and a hidden lazy
+                image is never fetched, so each reader downloads one logo instead of both. */}
             <img
               src={publicAssetUrl(BRAND_LOGO_LIGHT_PATH)}
               alt={PUBLISHER_NAME}
               width={800}
               height={123}
+              loading="lazy"
               className="brand-logo--light h-8 w-auto md:h-9"
             />
             <img
@@ -41,6 +43,7 @@ export function Masthead() {
               alt=""
               width={800}
               height={123}
+              loading="lazy"
               className="brand-logo--dark h-8 w-auto md:h-9"
             />
           </a>
@@ -50,7 +53,7 @@ export function Masthead() {
                 key={link.to}
                 to={link.to}
                 end={link.end}
-                className={({ isActive }) => cn("pulso-nav-link", isActive && "font-semibold")}
+                className={({ isActive }) => (isActive ? "pulso-nav-link font-semibold" : "pulso-nav-link")}
               >
                 {link.label}
               </NavLink>
