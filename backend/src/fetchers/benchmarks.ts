@@ -369,7 +369,7 @@ async function fetchArtificialAnalysis(
 }
 
 /**
- * The weekly capture behind the cover's model card: Artificial Analysis's free language tier.
+ * The daily capture behind the cover's model card: Artificial Analysis's free language tier.
  *
  * It used to be merged with an Arena text leaderboard mirrored on GitHub. That mirror republished
  * data scraped from a site whose terms forbid scraping, so it is gone; the media arenas on /modelos

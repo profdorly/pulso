@@ -176,7 +176,7 @@ export interface ModalitySection {
   /** Which metrics this modality actually has data for. */
   availableMetrics: MetricKey[];
   models: ModelRecord[];
-  /** How many models the source returned, before the publish cap. */
+  /** How many models had at least one usable metric, before the publish cap. */
   totalAvailable: number;
   /** Non-fatal problems, e.g. a source that did not answer. */
   notes: string[];
@@ -190,7 +190,7 @@ export interface ModelCatalog {
   sections: ModalitySection[];
   /** Coverage per metric, so the UI can say how many models a sort leaves out. */
   coverage: Array<{ modality: Modality; metric: MetricKey; withData: number; total: number }>;
-  /** What moved since the previous capture (`models/changes.ts`); absent on the first one. */
+  /** What moved since the previous week's opening capture; absent on the first one. */
   changes?: CatalogChanges;
 }
 

@@ -68,7 +68,7 @@ export const PRIMARY_METRIC: Record<Modality, MetricKey> = {
  * The full free tier is ~620 models, which serialises to 622 KB and gets inlined into the
  * prerendered `/modelos` HTML — enough to dominate the page weight on its own. The caps are
  * set to what the page actually renders, so nothing is shipped that the reader cannot see.
- * `totalAvailable` records what the source returned, and the page states both numbers along
+ * `totalAvailable` records how many had a usable metric, and the page states both numbers along
  * with the axis the cut was taken on, so "o mais barato" is never read as a global claim.
  */
 export const LANGUAGE_PUBLISH_CAP = 30;
@@ -159,6 +159,12 @@ export function mapLanguageModel(
   const evaluations = asRecord(record.evaluations) ?? {};
   const pricing = asRecord(record.pricing) ?? {};
   const performance = asRecord(record.performance) ?? {};
+  // Performance v3 is the current methodology. The legacy fields remain a fallback until the
+  // source removes them; end-to-end latency is the only one with no v3 headline equivalent.
+  const performanceV3 = asRecord(record.performance_v3);
+  const speedV3 = asNumber(performanceV3?.mean_output_tokens_per_second);
+  const firstTokenV3 = asNumber(performanceV3?.mean_time_to_first_token_seconds);
+  const performanceV3Benchmark = "Medição de performance da Artificial Analysis (média entre cargas de trabalho, 5 dias)";
 
   const observations = buildObservations(
     [
@@ -192,13 +198,19 @@ export function mapLanguageModel(
       },
       {
         metric: "output-tokens-per-second",
-        value: asNumber(performance.median_output_tokens_per_second),
-        benchmark: "Medição de performance da Artificial Analysis (mediana)",
+        value: speedV3 ?? asNumber(performance.median_output_tokens_per_second),
+        benchmark: speedV3 === undefined
+          ? "Medição de performance da Artificial Analysis (mediana)"
+          : performanceV3Benchmark,
+        benchmarkVersion: speedV3 === undefined ? undefined : "3",
       },
       {
         metric: "time-to-first-token",
-        value: asNumber(performance.median_time_to_first_token_seconds),
-        benchmark: "Medição de performance da Artificial Analysis (mediana)",
+        value: firstTokenV3 ?? asNumber(performance.median_time_to_first_token_seconds),
+        benchmark: firstTokenV3 === undefined
+          ? "Medição de performance da Artificial Analysis (mediana)"
+          : performanceV3Benchmark,
+        benchmarkVersion: firstTokenV3 === undefined ? undefined : "3",
       },
       {
         metric: "end-to-end-latency",

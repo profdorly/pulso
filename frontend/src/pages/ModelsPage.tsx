@@ -71,7 +71,7 @@ export function ModelsPage() {
             <a className="pulso-link" href={AA_HOME_URL}>
               Artificial Analysis
             </a>
-            , capturados toda segunda-feira.
+            , capturados diariamente.
           </p>
         ) : null}
       </header>
@@ -103,7 +103,7 @@ export function ModelsPage() {
               />
               <BarList
                 title={`${METRIC_DISPLAY["output-tokens-per-second"].label}: os ${speed.length} mais rápidos`}
-                note={`Entre os ${language.length} modelos de maior índice; tokens por segundo na resposta, mediana medida.`}
+                note={`Entre os ${language.length} modelos de maior índice; tokens por segundo na resposta, Performance v3 quando disponível.`}
                 rows={speed}
               />
             </div>
@@ -120,9 +120,10 @@ export function ModelsPage() {
             </h2>
             {group === "texto" ? (
               <p className="mt-3 max-w-[65ch]">
-                Índices vêm de avaliações executadas; preço é tabela do provedor; velocidade é
-                mediana medida. Colunas com “—” são dados que a fonte não publica para aquele
-                modelo.
+                Índices vêm de avaliações executadas; preço é tabela do provedor. Velocidade e
+                tempo até o primeiro token usam a Performance v3 quando disponível, com médias
+                dos últimos cinco dias. Colunas com “—” são dados que a fonte não publica para
+                aquele modelo.
               </p>
             ) : (
               <p className="mt-3 max-w-[65ch]">

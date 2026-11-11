@@ -19,7 +19,7 @@ Notícia de IA sai primeiro lá fora, e o veículo brasileiro que traduz leva di
 
 - **Capa e edição do dia**: o resumo da manhã, as prioridades e o radar, separado em imprensa e anúncios direto dos labs. O título de cada item leva à fonte; o resumo em português abre na própria edição.
 - **[Arquivo](https://pulso.dorly.com.br/arquivo/)** de todas as edições, cada uma com uma capa 16:9 desenhada pelo programa.
-- **[Modelos](https://pulso.dorly.com.br/modelos/)**: catálogo semanal com os números da Artificial Analysis. Responde qual é o mais inteligente, o mais rápido, o mais barato e quem está na fronteira de preço × inteligência.
+- **[Modelos](https://pulso.dorly.com.br/modelos/)**: catálogo diário com os números da Artificial Analysis. Responde qual é o mais inteligente, o mais rápido, o mais barato e quem está na fronteira de preço × inteligência.
 - **[Pulso da Semana](https://pulso.dorly.com.br/semana/)**: toda segunda-feira, a semana em IA em até cinco minutos de áudio, com transcrição e fontes. Disparado à mão, com o roteiro lido e aprovado antes de virar áudio ([docs/pulso-da-semana.md](docs/pulso-da-semana.md)).
 - **[RSS](https://pulso.dorly.com.br/feed.xml)** e **[metodologia](https://pulso.dorly.com.br/metodologia/)**, a versão para o leitor do que este README explica.
 
@@ -41,7 +41,7 @@ Todo dia por volta das 07:30 (Brasília):
 3. **Abre cada link** e confere que a página existe, é a matéria certa e saiu dentro da janela.
 4. **Escreve** título, frase e resumo em português a partir do texto da página, não da manchete.
 5. **Confere** o texto duas vezes, como mostra a próxima seção.
-6. **Publica** a edição, a capa e o feed RSS. Às segundas, antes da edição, atualiza o catálogo de modelos.
+6. **Publica** a edição, a capa e o feed RSS. Antes da edição, atualiza o catálogo diário de modelos.
 
 Uma busca na web por região e tema roda em teste ao lado dos feeds: ela registra o que traria de novo, sem publicar nada ainda.
 

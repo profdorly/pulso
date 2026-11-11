@@ -14,8 +14,10 @@ import { editionFileName, editionPublicPath } from "./paths.js";
 
 /** Public filename of the model catalogue artifact. */
 export const CATALOG_FILE = "models.json";
-/** The catalogue that opened the current week, kept in the kitchen only (never published). */
+/** The catalogue that opened the previous week, kept in the kitchen only (never published). */
 export const CATALOG_BASELINE_FILE = "models.baseline.json";
+/** The catalogue that opened the current week, used when the next week begins. */
+export const CATALOG_WEEK_START_FILE = "models.week-start.json";
 
 export interface EditionStore {
   dir: string;
@@ -35,6 +37,8 @@ export interface EditionStore {
   readCatalog(): ModelCatalog | null;
   readCatalogBaseline(): ModelCatalog | null;
   writeCatalogBaseline(catalog: ModelCatalog): void;
+  readCatalogWeekStart(): ModelCatalog | null;
+  writeCatalogWeekStart(catalog: ModelCatalog): void;
   /**
    * Replaces an already-published slot, keeping the previous artifact as a superseded
    * sibling. Returns the filename the old artifact was copied to, or null if there was
@@ -162,6 +166,18 @@ export function createEditionStore(dir: string): EditionStore {
     writeAtomically(path.join(dir, CATALOG_BASELINE_FILE), `${JSON.stringify(rest)}\n`);
   }
 
+  function readCatalogWeekStart(): ModelCatalog | null {
+    const raw = readJson(path.join(dir, CATALOG_WEEK_START_FILE));
+    if (raw == null) return null;
+    return modelCatalogSchema.parse(raw);
+  }
+
+  function writeCatalogWeekStart(catalog: ModelCatalog): void {
+    const rest: ModelCatalog = { ...catalog };
+    delete rest.changes;
+    writeAtomically(path.join(dir, CATALOG_WEEK_START_FILE), `${JSON.stringify(rest)}\n`);
+  }
+
   return {
     dir,
     readEdition,
@@ -173,6 +189,8 @@ export function createEditionStore(dir: string): EditionStore {
     readCatalog,
     readCatalogBaseline,
     writeCatalogBaseline,
+    readCatalogWeekStart,
+    writeCatalogWeekStart,
     supersede,
   };
 }

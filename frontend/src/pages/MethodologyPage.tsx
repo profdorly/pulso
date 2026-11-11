@@ -150,11 +150,13 @@ export function MethodologyPage() {
           Elo de uma arena não se compara com o de outra.
         </p>
         <p>
-          Dado que a fonte não publica aparece como “—”, nunca como zero. Tratar preço ausente
-          como zero colocaria modelo sem preço no topo de “mais barato”, que seria o erro mais
-          caro dessa página. Publicamos um recorte por modalidade — os 30 modelos de texto de
-          maior índice e os 20 de cada arena — e a página diz quantos a fonte mediu, para que
-          nenhuma ordenação seja lida como afirmação sobre o mercado inteiro.
+          Na velocidade e no tempo até o primeiro token, usamos a Performance v3 da fonte
+          quando disponível, com médias entre cargas de trabalho nos últimos cinco dias. Dado
+          que a fonte não publica aparece como “—”, nunca como zero. Tratar preço ausente como
+          zero colocaria modelo sem preço no topo de “mais barato”, que seria o erro mais caro
+          dessa página. Publicamos um recorte por modalidade — os 30 modelos de texto de maior
+          índice e os 20 de cada arena — e a página diz quantos a fonte mediu, para que nenhuma
+          ordenação seja lida como afirmação sobre o mercado inteiro.
         </p>
       </Section>
 

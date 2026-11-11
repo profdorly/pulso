@@ -1,5 +1,5 @@
-# Publica o Pulso: a cozinha gera a edição do dia (e, às segundas, antes dela, o catálogo de
-# modelos), o site é montado a partir dela e vai para o GitHub Pages; por fim, confere-se que o
+# Publica o Pulso: a cozinha gera a edição do dia (e, antes dela, o catálogo diário de modelos),
+# o site é montado a partir dela e vai para o GitHub Pages; por fim, confere-se que o
 # site no ar mostra a edição.
 #
 #   cozinha → site → deploy → conferência
@@ -272,8 +272,8 @@ jobs:
           if [ "$OUTCOME" = "success" ]; then path=""; else path="/fail"; fi
           curl -fsS -m 10 --retry 3 -o /dev/null "$HEALTHCHECKS_URL$path" || true
 
-      # Um segundo monitor, semanal, para o catálogo: uma segunda-feira sem captura não pode
-      # passar despercebida porque a edição do dia saiu.
+      # Um segundo monitor para o catálogo diário: uma captura que falha não pode passar
+      # despercebida porque a edição do dia saiu.
       - name: Avisar o monitor dos modelos
         if: needs.cozinha.outputs.catalogue == 'captured' && steps.check.outcome == 'success' && env.HEALTHCHECKS_MODELOS_URL != ''
         run: curl -fsS -m 10 --retry 3 -o /dev/null "$HEALTHCHECKS_MODELOS_URL" || true

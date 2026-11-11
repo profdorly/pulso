@@ -31,7 +31,7 @@ Configuração do check da edição (`HEALTHCHECKS_URL`):
 
 O modo Cron importa. No modo de período, um ping das 17:15 empurraria o próximo alerta para a noite do dia seguinte.
 
-Um segundo monitor, opcional, cobre o catálogo semanal de modelos (`HEALTHCHECKS_MODELOS_URL`): período de 7 dias, tolerância de 2 dias.
+Um segundo monitor, opcional, cobre o catálogo diário de modelos (`HEALTHCHECKS_MODELOS_URL`): modo **Cron**, expressão `30 10 * * *`, fuso UTC, tolerância de 4 h.
 
 No GitHub, em Settings → Notifications → Actions, deixe e-mail só para execuções que falham.
 

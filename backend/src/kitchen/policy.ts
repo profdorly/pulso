@@ -5,8 +5,7 @@ import { calendarDateBrt } from "../edition/timezone.js";
 /** Items no feed has shown for this long are forgotten. */
 export const NEWS_ITEM_RETENTION_DAYS = 90;
 
-const HOUR_MS = 3_600_000;
-const DAY_MS = 24 * HOUR_MS;
+const DAY_MS = 24 * 3_600_000;
 
 /** The `fetched_at` before which an item counts as gone from every feed. */
 export function retentionCutoff(now = new Date(), days = NEWS_ITEM_RETENTION_DAYS): string {
@@ -31,25 +30,18 @@ export function compactState(db: Db, repositories: Repositories, now = new Date(
   return forgotten;
 }
 
-/** Monday in Brasília, from the calendar date there. */
-function isMondayBrt(now: Date): boolean {
-  const [year, month, day] = calendarDateBrt(now).split("-").map(Number) as [number, number, number];
-  return new Date(Date.UTC(year, month - 1, day)).getUTCDay() === 1;
-}
-
 /**
  * Whether the daily run should capture the model catalogue before the edition.
  *
- * Once a week, on Monday, so the Monday cover already carries the new numbers and the page's
- * "o que mudou" compares week with week. A second run on Monday (the catch-up, a manual run)
- * finds a fresh catalogue and leaves it alone. A Monday whose capture failed leaves the old
- * catalogue in place, so it is more than a week old by Tuesday, and Tuesday retries.
+ * Once per calendar day in Brasília. A catch-up later that day leaves a fresh catalogue alone;
+ * a failed capture keeps the previous date, so the next day's run tries again. The reader's
+ * "o que mudou" still compares whole weeks, using the baselines kept by runEdition.
  */
 export function catalogueDue(lastCapturedAt: string | undefined, now = new Date()): boolean {
   if (!lastCapturedAt) return true;
-  const age = now.getTime() - Date.parse(lastCapturedAt);
-  if (!Number.isFinite(age) || age >= 7 * DAY_MS + 12 * HOUR_MS) return true;
-  return isMondayBrt(now) && age >= 12 * HOUR_MS;
+  const capturedAt = Date.parse(lastCapturedAt);
+  if (!Number.isFinite(capturedAt)) return true;
+  return calendarDateBrt(new Date(capturedAt)) !== calendarDateBrt(now);
 }
 
 /**

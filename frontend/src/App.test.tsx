@@ -534,6 +534,8 @@ describe("Pulso reader", () => {
     expect(row).not.toHaveTextContent("0.00");
     expect(screen.getByText(/1 de 2 modelos têm esse dado publicado/)).toBeInTheDocument();
     expect(screen.getByText(/A fonte mediu 198 modelos/)).toBeInTheDocument();
+    expect(screen.getByText(/capturados diariamente/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Performance v3 quando disponível/).length).toBeGreaterThan(0);
     // The free API's terms: credit with a link, wherever the numbers are shown.
     expect(screen.getByRole("link", { name: "Artificial Analysis" })).toHaveAttribute("href", "https://artificialanalysis.ai/");
     // Ready answers and a chart, rendered without any script.

@@ -95,11 +95,11 @@ describe("runDaily", () => {
   it("runs the edition, uploads over the version it downloaded, then keeps a dated copy", async () => {
     const etag = bucket.put("news.db", kitchenFile(dir, "2026-10-19T11:00:00.000Z"));
     const calls: string[] = [];
-    const result = await run(fakeJob(calls));
+    const result = await run(fakeJob(calls, { catalogueAt: "2026-10-21T10:31:00.000Z" }));
 
-    // Not Monday, and the catalogue is two days old: only the edition.
-    expect(calls).toEqual(["edition"]);
-    expect(result).toMatchObject({ uploaded: true, publish: true, catalogue: "skipped", latestEditionId: "2026-10-21-manha", warnings: [] });
+    // The previous catalogue is two days old: today's capture comes before the edition.
+    expect(calls).toEqual(["catalogue", "edition"]);
+    expect(result).toMatchObject({ uploaded: true, publish: true, catalogue: "captured", latestEditionId: "2026-10-21-manha", warnings: [] });
     expect(bucket.puts.map((put) => [put.Key, put.IfMatch])).toEqual([
       ["news.db", etag],
       ["backups/news-2026-10-21T103000Z.db", undefined],
@@ -114,7 +114,7 @@ describe("runDaily", () => {
     db.close();
   });
 
-  it("captures the catalogue before the edition on Monday, and only once", async () => {
+  it("captures the catalogue before the edition each day, and only once", async () => {
     bucket.put("news.db", kitchenFile(dir, "2026-10-19T11:00:00.000Z"));
     const calls: string[] = [];
     const first = await run(fakeJob(calls, { catalogueAt: "2026-10-26T10:31:00.000Z" }), { now: MONDAY });
@@ -131,7 +131,7 @@ describe("runDaily", () => {
     expect(second).toMatchObject({ uploaded: false, publish: false, catalogue: "skipped" });
   });
 
-  it("retries a Monday catalogue that failed on the next day", async () => {
+  it("retries a failed catalogue on the next day", async () => {
     bucket.put("news.db", kitchenFile(dir, "2026-10-19T11:00:00.000Z"));
     const calls: string[] = [];
     const tuesday = new Date("2026-10-27T10:30:00Z");

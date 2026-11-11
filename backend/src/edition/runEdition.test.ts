@@ -392,7 +392,7 @@ describe("runEdition", () => {
     ]);
   });
 
-  it("records what moved since the previous catalogue on the Monday capture", async () => {
+  it("keeps the weekly comparison stable through daily captures", async () => {
     const capture = (capturedAt: string, index: number) => ({
       catalog: {
         schemaVersion: 1 as const,
@@ -458,10 +458,29 @@ describe("runEdition", () => {
     await run("2026-08-17T15:00:00.000Z", 53);
     expect(store.readCatalog()).toMatchObject({ capturedAt: "2026-08-17T15:00:00.000Z", changes: weekMove });
 
-    // A capture whose text list came back empty does not replace the catalogue.
-    const result = await run("2026-08-24T11:00:00.000Z", 0, true);
+    // Daily capture: Tuesday still compares with Monday of last week, not with yesterday.
+    await run("2026-08-18T11:00:00.000Z", 54);
+    expect(store.readCatalog()?.changes).toMatchObject({
+      since: "2026-08-10T11:00:00.000Z",
+      moved: [{ id: "m", metric: "intelligence-index", before: 50, after: 54 }],
+    });
+
+    // Next Monday rolls last week's opening into the baseline; Tuesday keeps using it.
+    await run("2026-08-24T11:00:00.000Z", 55);
+    expect(store.readCatalog()?.changes).toMatchObject({
+      since: "2026-08-17T11:00:00.000Z",
+      moved: [{ id: "m", metric: "intelligence-index", before: 53, after: 55 }],
+    });
+    await run("2026-08-25T11:00:00.000Z", 56);
+    expect(store.readCatalog()?.changes).toMatchObject({
+      since: "2026-08-17T11:00:00.000Z",
+      moved: [{ id: "m", metric: "intelligence-index", before: 53, after: 56 }],
+    });
+
+    // A capture whose text list came back empty does not replace the catalogue or its baselines.
+    const result = await run("2026-08-26T11:00:00.000Z", 0, true);
     expect(result.status).toBe("unchanged");
-    expect(store.readCatalog()?.capturedAt).toBe("2026-08-17T15:00:00.000Z");
+    expect(store.readCatalog()?.capturedAt).toBe("2026-08-25T11:00:00.000Z");
   });
 
   it("keeps a published item alive while its feed still lists it", async () => {

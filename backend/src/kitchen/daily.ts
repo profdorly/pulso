@@ -22,7 +22,7 @@ import { backupState, downloadState, pruneBackups, uploadState, type StateTarget
  */
 
 export type KitchenMode =
-  /** Catalogue when due (Mondays), then the edition. */
+  /** Catalogue when due (once per day), then the edition. */
   | "daily"
   /** Only the catalogue, now. */
   | "catalogue";

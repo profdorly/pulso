@@ -72,7 +72,7 @@ async function main(): Promise<void> {
     process.stdout.write(`${edition.id}: ${from} → #${edition.number}${edition.cover ? "" : " (sem capa)"}\n`);
   }
   if (report.missingCovers.length > 0) throw new Error(`capas ausentes: ${report.missingCovers.join(", ")}`);
-  if (!report.catalog) process.stdout.write("aviso: sem models.json; /modelos fica vazio até a próxima segunda\n");
+  if (!report.catalog) process.stdout.write("aviso: sem models.json; /modelos fica vazio até a próxima captura\n");
 
   const { db, repositories } = initializeDb({ DATABASE_PATH: databasePath });
   try {

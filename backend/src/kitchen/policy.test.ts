@@ -22,25 +22,26 @@ describe("shouldPublishSite", () => {
 });
 
 describe("catalogueDue", () => {
-  const monday = new Date("2026-10-26T10:30:00Z");
-  it("captures on Monday, once", () => {
-    expect(catalogueDue("2026-10-19T10:31:00Z", monday)).toBe(true);
+  it("captures once per calendar day, including mid-week", () => {
+    expect(catalogueDue("2026-10-19T10:31:00Z", new Date("2026-10-26T10:30:00Z"))).toBe(true);
     expect(catalogueDue("2026-10-26T10:31:00Z", new Date("2026-10-26T12:40:00Z"))).toBe(false);
+    expect(catalogueDue("2026-10-26T10:31:00Z", new Date("2026-10-27T10:30:00Z"))).toBe(true);
   });
 
-  it("does not capture mid-week, but retries a Monday that failed", () => {
-    expect(catalogueDue("2026-10-19T10:31:00Z", new Date("2026-10-21T10:30:00Z"))).toBe(false);
-    // Last good capture a week ago Monday; this Monday's failed, so Tuesday tries again.
-    expect(catalogueDue("2026-10-19T10:31:00Z", new Date("2026-10-27T10:30:00Z"))).toBe(true);
+  it("retries on the next day when the previous capture failed", () => {
+    // The catalogue stayed at Monday's date because Tuesday's capture did not replace it.
+    expect(catalogueDue("2026-10-26T10:31:00Z", new Date("2026-10-28T10:30:00Z"))).toBe(true);
   });
 
-  it("captures when there is no catalogue yet", () => {
+  it("captures when there is no catalogue or its date cannot be read", () => {
     expect(catalogueDue(undefined, new Date("2026-10-21T10:30:00Z"))).toBe(true);
+    expect(catalogueDue("not-a-date", new Date("2026-10-21T10:30:00Z"))).toBe(true);
   });
 
-  it("reads Monday in Brasília, not in UTC", () => {
+  it("reads the day in Brasília, not in UTC", () => {
     // 01:00 UTC Monday is still Sunday 22:00 in São Paulo.
-    expect(catalogueDue("2026-10-19T10:31:00Z", new Date("2026-10-26T01:00:00Z"))).toBe(false);
+    expect(catalogueDue("2026-10-25T10:31:00Z", new Date("2026-10-26T01:00:00Z"))).toBe(false);
+    expect(catalogueDue("2026-10-25T10:31:00Z", new Date("2026-10-26T10:30:00Z"))).toBe(true);
   });
 });
 

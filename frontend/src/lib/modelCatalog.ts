@@ -58,7 +58,7 @@ export interface ModalitySection {
   group: ModalityGroup;
   availableMetrics: MetricKey[];
   models: ModelRecord[];
-  /** How many models the source returned, before the publisher's cap. */
+  /** How many models had at least one usable metric, before the publisher's cap. */
   totalAvailable: number;
   notes: string[];
 }
@@ -69,7 +69,7 @@ export interface ChangedModel {
   creator: string;
 }
 
-/** What moved since the previous capture; computed by the kitchen (`backend/src/models/changes.ts`). */
+/** What moved since the previous week's opening capture; computed by the kitchen. */
 export interface CatalogChanges {
   since: string;
   /** False when the intelligence index changed version: scores then do not compare. */

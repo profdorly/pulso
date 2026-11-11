@@ -37,7 +37,7 @@ export interface PulsoJobInput {
 }
 
 /**
- * One edition (or the Monday catalogue job) against a local kitchen: the SQLite file and the
+ * One edition (or the daily catalogue job) against a local kitchen: the SQLite file and the
  * editions directory. Where those come from and where they go afterwards is the caller's
  * business — the CLI uses `data/`, the scheduled workflow downloads them first.
  */

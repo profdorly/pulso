@@ -8,7 +8,7 @@ import {
 import { formatEditionDate } from "../../lib/formatPt.js";
 
 /**
- * "O que mudou" since the previous weekly capture. The kitchen decides what counts as a change
+ * "O que mudou" since the previous week's opening capture. The kitchen decides what counts as a change
  * (`backend/src/models/changes.ts`); this only says it in words.
  */
 

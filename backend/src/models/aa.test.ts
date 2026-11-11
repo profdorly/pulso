@@ -79,6 +79,29 @@ describe("mapLanguageModel", () => {
     expect(observationFor(model!, "intelligence-index")?.benchmark).toContain("Intelligence Index");
   });
 
+  it("prefers the current performance v3 and labels its methodology", () => {
+    const model = mapLanguageModel(
+      {
+        ...LANGUAGE_FULL,
+        performance_v3: {
+          mean_output_tokens_per_second: 55.5,
+          mean_time_to_first_token_seconds: 1.2,
+        },
+      },
+      capturedAt,
+      "5"
+    );
+    const speed = observationFor(model!, "output-tokens-per-second");
+    const firstToken = observationFor(model!, "time-to-first-token");
+    expect(speed?.value).toBe(55.5);
+    expect(speed?.benchmarkVersion).toBe("3");
+    expect(speed?.benchmark).toContain("média");
+    expect(firstToken?.value).toBe(1.2);
+    expect(firstToken?.benchmarkVersion).toBe("3");
+    // The old end-to-end field remains a separate observation until the source removes it.
+    expect(observationFor(model!, "end-to-end-latency")?.value).toBe(3.1);
+  });
+
   it("omits absent metrics instead of recording them as zero", () => {
     const model = mapLanguageModel(LANGUAGE_SPARSE, capturedAt);
     expect(model?.observations).toHaveLength(1);

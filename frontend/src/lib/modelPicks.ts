@@ -41,8 +41,9 @@ export function bestOfEachFamily(models: readonly ModelRecord[]): ModelRecord[] 
 }
 
 /**
- * One price per model: three input tokens to one output token, the blend Artificial Analysis
- * itself uses. Undefined unless both prices are published.
+ * One comparison price per model: three input tokens to one output token, a convention stated
+ * on the page. It is not Artificial Analysis's official blended price, which also uses cache
+ * prices absent from much of the free tier. Undefined unless both prices are published.
  */
 export function blendedPrice(model: ModelRecord): number | undefined {
   const input = observationFor(model, "price-input-1m")?.value;
@@ -125,7 +126,7 @@ export function modelPicks(models: readonly ModelRecord[], size = 3): PickList[]
     {
       id: "mais-rapido",
       title: "Mais rápido",
-      rule: `Entre ${among}: mais tokens por segundo na resposta, mediana medida.`,
+      rule: `Entre ${among}: mais tokens por segundo na resposta, medição da Artificial Analysis.`,
       picks: topBy(models, "output-tokens-per-second", size, (value) => `${value.toFixed(0)} tokens/s`),
     },
     {

@@ -198,29 +198,67 @@ function previousCatalog(store: EditionStore): ModelCatalog | null {
   }
 }
 
-/** A capture this much newer than the page's catalogue starts a new week of comparison. */
-const CATALOG_WEEK_MS = 6 * 24 * 3_600_000;
+/** Monday that opens the capture's calendar week in Brasília. */
+function catalogWeek(now: Date): string {
+  const [year, month, day] = calendarDateBrt(now).split("-").map(Number) as [number, number, number];
+  const monday = new Date(Date.UTC(year, month - 1, day));
+  monday.setUTCDate(monday.getUTCDate() - ((monday.getUTCDay() + 6) % 7));
+  return monday.toISOString().slice(0, 10);
+}
+
+function savedWeekStart(store: EditionStore): ModelCatalog | null {
+  try {
+    return store.readCatalogWeekStart();
+  } catch {
+    return null;
+  }
+}
 
 /**
- * What "o que mudou" compares a new capture with: the catalogue of the previous week.
+ * What "o que mudou" compares a new capture with: the catalogue that opened the previous week.
  *
- * Normally that is the catalogue being replaced. A second capture in the same week (a manual
- * run, a re-run after a failure) must not compare with the one written hours earlier — the
- * week's changes would turn into "nothing changed". So the catalogue that opened the week is
- * kept apart, and a same-week capture compares with it instead.
+ * Daily captures need two saved catalogues. The baseline stays fixed through this week; the week
+ * start is this week's first capture, which becomes the baseline when next week begins. Keeping
+ * only yesterday's catalogue would either compare day with day or leave the baseline stuck in the
+ * first week forever.
  */
 function catalogBaseline(current: ModelCatalog | null, store: EditionStore, now: Date): ModelCatalog | null {
-  if (!current) return null;
-  const age = now.getTime() - Date.parse(current.capturedAt);
-  let kept: ModelCatalog | null;
+  let previousWeek: ModelCatalog | null;
   try {
-    kept = store.readCatalogBaseline();
+    previousWeek = store.readCatalogBaseline();
   } catch {
-    kept = null;
+    previousWeek = null;
   }
-  if (age < CATALOG_WEEK_MS && kept && kept.capturedAt < current.capturedAt) return kept;
-  store.writeCatalogBaseline(current);
-  return current;
+  const thisWeekOpening = savedWeekStart(store);
+  if (!current) return previousWeek ?? thisWeekOpening;
+
+  const opensNewWeek = catalogWeek(new Date(current.capturedAt)) !== catalogWeek(now);
+  if (opensNewWeek) {
+    const baseline = thisWeekOpening ?? previousWeek ?? current;
+    store.writeCatalogBaseline(baseline);
+    return baseline;
+  }
+
+  const baseline = previousWeek ?? thisWeekOpening ?? current;
+  if (!previousWeek) store.writeCatalogBaseline(baseline);
+  return baseline;
+}
+
+/** Remembers this week's first good capture after it has been written. */
+function recordCatalogWeekStart(
+  current: ModelCatalog | null,
+  store: EditionStore,
+  now: Date,
+  next: ModelCatalog
+): void {
+  const opensNewWeek = !current || catalogWeek(new Date(current.capturedAt)) !== catalogWeek(now);
+  if (opensNewWeek) {
+    store.writeCatalogWeekStart(next);
+  } else if (!savedWeekStart(store)) {
+    // Migration from weekly captures: the catalogue already in place is the best available
+    // opening for this week, usually Monday's capture.
+    store.writeCatalogWeekStart(current ?? next);
+  }
 }
 
 /**
@@ -437,7 +475,9 @@ async function runEditionLocked(
         const current = previousCatalog(store);
         const baseline = catalogBaseline(current, store, now);
         const changes = catalogChanges(baseline, catalogResult.catalog);
-        store.writeCatalog(changes ? { ...catalogResult.catalog, changes } : catalogResult.catalog);
+        const nextCatalog = changes ? { ...catalogResult.catalog, changes } : catalogResult.catalog;
+        store.writeCatalog(nextCatalog);
+        recordCatalogWeekStart(current, store, now, nextCatalog);
       }
       const modelCount = catalogResult.catalog.sections.reduce(
         (total, section) => total + section.models.length,
