@@ -97,7 +97,6 @@ export const QUIET_EDITION_STALENESS_MS = 36 * 60 * 60 * 1000;
 export interface EditionEnv {
   OPENAI_API_KEY?: string;
   OPENAI_MODEL?: string;
-  OPENAI_MODEL_DISCOVERY?: string;
   OPENAI_MODEL_EDITORIAL?: string;
   OPENAI_MODEL_WORKER?: string;
   ARTIFICIAL_ANALYSIS_API_KEY?: string;

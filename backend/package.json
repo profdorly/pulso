@@ -12,6 +12,7 @@
     "kitchen:weekly": "tsx src/kitchen/weekly.ts",
     "semana": "tsx src/weekly/semana.ts",
     "health": "tsx src/health/cli.ts",
+    "sombra": "tsx src/health/shadowCli.ts",
     "cover:fixtures": "tsx src/edition/cover/backfill.ts",
     "build": "tsc -p tsconfig.json && printf '%s\\n' '{\"type\":\"module\"}' > dist/package.json",
     "test": "vitest run --pool=forks",

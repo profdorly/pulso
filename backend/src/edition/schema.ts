@@ -152,7 +152,8 @@ export const pulsoEditionSchema = z.object({
   ),
   benchmarks: pulsoBenchmarksSchema,
   models: z.object({
-    discovery: z.string(),
+    /** Only in editions published before 31 Oct 2026; never read, no longer written. */
+    discovery: z.string().optional(),
     editorial: z.string(),
     worker: z.string(),
   }),

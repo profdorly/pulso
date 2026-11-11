@@ -17,6 +17,7 @@
     "kitchen:weekly": "npm run kitchen:weekly --workspace=backend --",
     "semana": "npm run semana --workspace=backend --",
     "health": "npm run health --workspace=backend --",
+    "sombra": "npm run sombra --workspace=backend --",
     "spike:auditor": "cd backend && npx tsx src/edition/auditorCli.ts",
     "build": "npm run build --workspace=backend && npm run build --workspace=frontend",
     "build:site": "node scripts/rasterize-og.mjs && npm run build:client --workspace=frontend && npm run build:ssr --workspace=frontend && node scripts/build-site.mjs && node scripts/rasterize-covers.mjs && node scripts/prerender.mjs",

@@ -15,9 +15,8 @@ import type { WorkerResult } from "./worker.js";
  * could not, before the search is allowed onto the cover: how many stories a day it really adds,
  * from where, and at what cost.
  *
- * Read them with:
- *   aws logs filter-log-events --log-group-name /aws/lambda/pulso-publisher-staging \
- *     --filter-pattern '"pulso-web-search-shadow"'
+ * Read them with `npm run sombra -- --dias 7` (backend/src/health/shadowCli.ts), which collects the
+ * lines from the publishing workflow's logs through the GitHub CLI and sums them up.
  */
 
 export type WebSearchMode = "off" | "shadow";

@@ -64,7 +64,7 @@ export interface PulsoEdition {
     /** Always empty in a published edition: the full rows stay in the kitchen. */
     rows: unknown[];
   };
-  models: { discovery: string; editorial: string; worker: string };
+  models: { discovery?: string; editorial: string; worker: string };
   costUsdApprox: number;
   /** Increments when a slot is republished; revision 1 is the first publication. */
   revision?: number;
