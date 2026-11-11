@@ -47,6 +47,14 @@ function run(name, { weekly }) {
   const site = path.join(work, `${name}-site`);
   cpSync(fixtures, kitchen, { recursive: true });
 
+  // The daily catalogue is newer than the edition's frozen model card. Only the cover follows it.
+  const catalogPath = path.join(kitchen, "models.json");
+  const catalog = JSON.parse(readFileSync(catalogPath, "utf8"));
+  catalog.capturedAt = "2026-10-10T12:00:00.000Z";
+  catalog.sections.find((section) => section.modality === "language")
+    .models[0].observations.find((observation) => observation.metric === "intelligence-index").value = 62.4;
+  writeFileSync(catalogPath, JSON.stringify(catalog));
+
   // An edition of the twice-daily period: in the index, with its file, and still not published.
   const legacy = { ...older, id: "2026-10-08-tarde", slot: "tarde", calendarDate: "2026-10-08", number: 90 };
   mkdirSync(path.join(kitchen, "2026-10-08"), { recursive: true });
@@ -186,6 +194,17 @@ describe("prerender", () => {
   it("ships the cover as a static page when there is no weekly episode", () => {
     assert.doesNotMatch(plain("index.html"), /type="module"|id="pulso-data"/);
     assert.doesNotMatch(plain("404.html"), /type="module"|id="pulso-data"/);
+  });
+
+  it("uses the current catalogue on the cover and preserves the dated edition's snapshot", () => {
+    assert.match(plain("index.html"), /pulso-rank-value">62\.4/);
+    assert.doesNotMatch(plain("index.html"), /pulso-rank-value">61\.2/);
+    assert.match(plain("2026-10-10/index.html"), /pulso-rank-value">61\.2/);
+    assert.doesNotMatch(plain("2026-10-10/index.html"), /pulso-rank-value">62\.4/);
+
+    // A hydrated cover must carry the same catalogue, or React would restore the old snapshot.
+    assert.match(withWeekly("index.html"), /"catalog":\{/);
+    assert.match(withWeekly("index.html"), /62\.4/);
   });
 
   it("hydrates only the weekly audio: its page, and the cover that shows its card", () => {

@@ -1,13 +1,20 @@
 import { Link } from "react-router-dom";
 import type { PulsoEdition } from "../../lib/edition.js";
 import { formatCapturedAt } from "../../lib/formatPt.js";
-import { AA_HOME_URL } from "../../lib/modelCatalog.js";
-import { splitModelLabel } from "../../lib/modelPicks.js";
+import {
+  AA_HOME_URL,
+  formatObservation,
+  observationFor,
+  type ModelCatalog,
+} from "../../lib/modelCatalog.js";
+import { rankByFamily, splitModelLabel } from "../../lib/modelPicks.js";
 
 /** Rows on the cover card. The edition carries five; the table on /modelos carries the rest. */
 const RANK_LENGTH = 5;
 
-function metricOf(row: PulsoEdition["benchmarks"]["headline"][number]): string {
+type StripRow = PulsoEdition["benchmarks"]["headline"][number];
+
+function metricOf(row: StripRow): string {
   return row.metric ?? "Índice de inteligência";
 }
 
@@ -31,8 +38,31 @@ function Credit({ names }: { names: string[] }) {
   );
 }
 
-export function ModelsStrip({ edition }: { edition: PulsoEdition }) {
-  const rows = edition.benchmarks.headline.slice(0, RANK_LENGTH);
+function catalogRows(catalog: ModelCatalog): StripRow[] {
+  const language = catalog.sections.find((section) => section.modality === "language")?.models ?? [];
+  return rankByFamily(language, "intelligence-index")
+    .slice(0, RANK_LENGTH)
+    .map((model) => ({
+      label: model.name,
+      value: formatObservation(observationFor(model, "intelligence-index")),
+      delta: null,
+      metric: "Índice de inteligência",
+    }));
+}
+
+export function ModelsStrip({
+  edition,
+  catalog,
+}: {
+  edition: PulsoEdition;
+  /** Current catalogue on the cover; omitted on dated editions, which keep their historical snapshot. */
+  catalog?: ModelCatalog | null;
+}) {
+  const rows = catalog ? catalogRows(catalog) : edition.benchmarks.headline.slice(0, RANK_LENGTH);
+  const capturedAt = catalog?.capturedAt ?? edition.benchmarks.capturedAt;
+  const attribution = catalog
+    ? catalog.sources.map((source) => source === "artificial-analysis" ? "Artificial Analysis" : source)
+    : edition.benchmarks.attribution;
   const metrics = [...new Set(rows.map(metricOf))];
   // One metric for the whole list is stated once in the header instead of under every number.
   const sharedMetric = metrics.length === 1 ? metrics[0] : null;
@@ -64,9 +94,9 @@ export function ModelsStrip({ edition }: { edition: PulsoEdition }) {
         </ol>
       )}
       <div className="pulso-models-foot">
-        {edition.benchmarks.attribution.length > 0 ? (
+        {attribution.length > 0 ? (
           <p className="pulso-note">
-            <Credit names={edition.benchmarks.attribution} />, medido em {formatCapturedAt(edition.benchmarks.capturedAt)}
+            <Credit names={attribution} />, medido em {formatCapturedAt(capturedAt)}
           </p>
         ) : null}
         <Link to="/modelos/" className="pulso-action">

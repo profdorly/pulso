@@ -7,13 +7,12 @@ import {
   fetchModelCatalog,
   groupsWithData,
   observationFor,
-  rankBy,
   sectionsInGroup,
   type MetricKey,
   type ModelCatalog,
   type ModelRecord,
 } from "../lib/modelCatalog.js";
-import { bestOfEachFamily } from "../lib/modelPicks.js";
+import { rankByFamily } from "../lib/modelPicks.js";
 import { formatCapturedAt } from "../lib/formatPt.js";
 import { BarList, type BarRow } from "../components/pulso/BarList.js";
 import { CatalogChanges } from "../components/pulso/CatalogChanges.js";
@@ -31,7 +30,7 @@ import { PriceMap } from "../components/pulso/PriceMap.js";
 const BAR_LIMIT = 10;
 
 function bars(models: readonly ModelRecord[], metric: MetricKey, display: (value: number) => string): BarRow[] {
-  return bestOfEachFamily(rankBy([...models], metric).ranked)
+  return rankByFamily(models, metric)
     .slice(0, BAR_LIMIT)
     .map((model) => {
       const value = observationFor(model, metric)!.value;

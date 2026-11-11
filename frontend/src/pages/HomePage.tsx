@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { fetchEditionIndex, fetchLatestEdition } from "../lib/editionsApi.js";
 import { usePreloadedEditionData, useEditionResource } from "../lib/editionData.js";
 import type { PulsoEdition, PulsoIndex } from "../lib/edition.js";
+import { fetchModelCatalog, type ModelCatalog } from "../lib/modelCatalog.js";
 import { editionPath } from "../lib/editionPaths.js";
 import { pageRoute } from "../lib/paths.js";
 import { DigestBullets } from "../components/pulso/DigestBullets.js";
@@ -33,10 +34,16 @@ export function HomePage() {
     fetchEditionIndex,
     []
   );
+  const catalogResource = useEditionResource<ModelCatalog>(
+    preloaded?.catalog ?? null,
+    fetchModelCatalog,
+    []
+  );
 
   const error = editionResource.error ?? indexResource.error;
   const edition = editionResource.data;
   const index = indexResource.data;
+  const catalog = catalogResource.data;
 
   if (error) return <p className="text-base text-muted" role="alert">{error}</p>;
   if (!edition || !index) return <p className="text-base text-muted" role="status">Carregando a capa…</p>;
@@ -75,7 +82,7 @@ export function HomePage() {
         </section>
 
         <aside className="pulso-aside">
-          <ModelsStrip edition={edition} />
+          <ModelsStrip edition={edition} catalog={catalog} />
         </aside>
       </div>
 

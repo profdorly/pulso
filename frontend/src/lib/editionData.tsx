@@ -18,7 +18,7 @@ import { EditionNotFoundError } from "./editionsApi.js";
 export interface PreloadedEditionData {
   edition?: PulsoEdition | null;
   index?: PulsoIndex | null;
-  /** Model catalogue, for the models route. */
+  /** Current model catalogue, shared by the models route and the cover's model card. */
   catalog?: ModelCatalog | null;
   /** Every weekly episode, for the `/semana/` list. */
   weeklyIndex?: WeeklyIndex | null;

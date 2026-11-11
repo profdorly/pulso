@@ -40,6 +40,11 @@ export function bestOfEachFamily(models: readonly ModelRecord[]): ModelRecord[] 
   });
 }
 
+/** The same metric order and one-row-per-family rule on the cover and the catalogue charts. */
+export function rankByFamily(models: readonly ModelRecord[], metric: MetricKey): ModelRecord[] {
+  return bestOfEachFamily(rankBy([...models], metric).ranked);
+}
+
 /**
  * One comparison price per model: three input tokens to one output token, a convention stated
  * on the page. It is not Artificial Analysis's official blended price, which also uses cache

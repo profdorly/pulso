@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { MetricKey, ModelRecord } from "./modelCatalog.js";
-import { blendedPrice, modelFamily, modelPicks, priceFrontier, splitModelLabel } from "./modelPicks.js";
+import { blendedPrice, modelFamily, modelPicks, priceFrontier, rankByFamily, splitModelLabel } from "./modelPicks.js";
 
 function model(id: string, name: string, values: Partial<Record<MetricKey, number>>): ModelRecord {
   return {
@@ -35,6 +35,16 @@ describe("model picks", () => {
     expect(splitModelLabel("Claude Opus 5 (Max Effort)")).toEqual({ name: "Claude Opus 5", variant: "Max Effort" });
     expect(splitModelLabel("Mid")).toEqual({ name: "Mid", variant: null });
     expect(modelFamily("Opus (Max)")).toBe(modelFamily("Opus (Low)"));
+  });
+
+  it("ranks one best configuration per family for every model chart", () => {
+    expect(rankByFamily(models, "intelligence-index").map((model) => model.id)).toEqual([
+      "opus-max",
+      "unpriced",
+      "mid",
+      "pricey",
+      "tiny",
+    ]);
   });
 
   it("blends price three input to one output, and only with both published", () => {

@@ -300,6 +300,32 @@ describe("Pulso reader", () => {
     expect(document.querySelector('img[src$=".cover-r1.svg"]')).toBeNull();
   });
 
+  it("uses the current catalogue instead of the edition's old model snapshot on the cover", () => {
+    const current = structuredClone(catalog);
+    current.capturedAt = "2026-10-20T10:00:00.000Z";
+    const leader = current.sections.find((section) => section.modality === "language")!.models[0]!;
+    leader.id = "gemini-4-carbon-medium";
+    leader.name = "Gemini 4 Carbon (Medium)";
+    leader.observations.find((observation) => observation.metric === "intelligence-index")!.value = 58.3;
+
+    renderAt("/", { edition, index, catalog: current });
+
+    expect(screen.getByText("58.3")).toBeInTheDocument();
+    expect(screen.getByText("Medium")).toBeInTheDocument();
+    expect(screen.queryByText("63.0")).not.toBeInTheDocument();
+  });
+
+  it("keeps the historical model snapshot on a dated edition", () => {
+    const current = structuredClone(catalog);
+    const leader = current.sections.find((section) => section.modality === "language")!.models[0]!;
+    leader.observations.find((observation) => observation.metric === "intelligence-index")!.value = 58.3;
+
+    renderAt("/2026-10-19/", { edition, index, catalog: current });
+
+    expect(screen.getByText("63.0")).toBeInTheDocument();
+    expect(screen.queryByText("58.3")).not.toBeInTheDocument();
+  });
+
   it("names the edition above the headline by number and day, without a slot", async () => {
     renderAt("/");
     const heading = await screen.findByRole("heading", { level: 1 });

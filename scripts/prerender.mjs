@@ -173,8 +173,8 @@ function record(meta, lastmod) {
 {
   const meta = { ...homeMetadata(), build: { edition: latest.id, catalogue: catalog?.capturedAt } };
   const hydrate = weeklyEpisodes.length > 0;
-  writeHtml("/", buildHtml({ route: "/", meta, preloaded: { edition: latest, index }, hydrate }));
-  record(meta, latest.capturedAt);
+  writeHtml("/", buildHtml({ route: "/", meta, preloaded: { edition: latest, index, catalog }, hydrate }));
+  record(meta, catalog?.capturedAt > latest.capturedAt ? catalog.capturedAt : latest.capturedAt);
 }
 
 // Archive — one document per page.
